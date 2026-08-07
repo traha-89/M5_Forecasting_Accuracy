@@ -43,3 +43,11 @@ To combine sources: melt the wide sales files to long format (`id`, `d`, `sales`
 
 All changes go through a pull request — do not push directly to `main`. Use the PR template at
 `.github/PULL_REQUEST_TEMPLATE.md` (type of change, changes, test plan).
+
+## Claude Code skills
+
+`.claude/skills/pr-summary/SKILL.md` — reviews all open PRs (`/pr-summary`). Fetches each PR's
+diff, comments, reviews, and changed files via the `gh` CLI, then reports a per-PR summary and
+assessment against this file's conventions and the PR template. Read-only; requires `gh auth
+login`. New skills only appear after restarting Claude Code, since the skill list is loaded at
+session start.
