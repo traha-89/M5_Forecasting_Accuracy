@@ -26,15 +26,15 @@ If `gh` is missing or not authenticated, stop and tell the user how to fix it
 1. **List open PRs**
 
    ```
-   gh pr list --state open --json number,title,author,headRefName,baseRefName,url,createdAt,updatedAt,isDraft
+   !`gh pr list --state open --json number,title,author,headRefName,baseRefName,url,createdAt,updatedAt,isDraft`
    ```
 
    If there are no open PRs, say so and stop.
 
 2. **For each open PR, gather full context:**
 
-   - Description/metadata: `gh pr view <number> --json body,additions,deletions,changedFiles,files,comments,reviews,statusCheckRollup`
-   - Full diff: `gh pr diff <number>`
+   - Description/metadata: !`gh pr view <number> --json body,additions,deletions,changedFiles,files,comments,reviews,statusCheckRollup`
+   - Full diff: !`gh pr diff <number>`
 
    Fetch every PR before writing any summaries, so the report covers all of them consistently.
 
