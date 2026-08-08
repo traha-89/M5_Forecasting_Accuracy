@@ -56,19 +56,25 @@ Record wall-clock training time per model per fold. Extrapolate to 10 stores and
 a full 10-store run. If the pilot suggests materially worse, resolve it here — the fallbacks are a
 reduced history window, store×category partitions, or fewer boosting rounds.
 
-## Optional: alternative horizon strategy
+## Optional: alternative horizon strategy — skip by default
+
+> **This is optional and not part of the gate. Do not attempt it until the four candidates above are
+> built and scored.** Only pursue it if the best model fails to clearly beat seasonal-naive.
 
 If the single-model lag-28 approach underperforms, the main alternative used by strong M5 solutions
 is to **split the horizon into four 7-day blocks and fit a separate model per block.** Days 1–7 can
 then use lags as short as 7, which is genuinely more information than lag-28 allows. Cost: 4× the
 models and 4× the training time.
 
-Test it in the pilot precisely because it is cheap here. Decide on evidence, and record the decision.
+The pilot is the cheap place to test it, if it is needed at all. Decide on evidence, and record the
+decision in `DECISIONS.md`.
 
 ## Gate
 
 - [ ] All four candidates scored on all three folds with `src/metrics.py`
-- [ ] At least one clearly beats the P4 seasonal-naive WRMSSE
+- [ ] At least one clearly beats the P4 seasonal-naive WRMSSE (from `reports/baselines.csv`)
+- [ ] `reports/pilot_scores.csv` written and committed
+  (`model`, `fold`, `wrmsse`, `rmsse`, `wmae`, `bias_pct`, `runtime_s`)
 - [ ] Per-model runtime measured and extrapolated to 10 stores
 - [ ] Horizon strategy (single vs 4×7-day) decided and recorded
 - [ ] Per-level and per-ADI/CV²-quadrant breakdown produced for the best model

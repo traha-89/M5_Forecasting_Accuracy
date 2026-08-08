@@ -27,6 +27,7 @@ scikit-learn
 jupyterlab
 ipykernel
 tqdm
+pytest           # P3's metric validation gate depends on this
 ```
 
 Create:
@@ -34,13 +35,43 @@ Create:
 ```
 notebooks/                 # 01_… through 08_…, one per phase
 src/                       # thin modules imported by notebooks (P3, P5 only)
+  __init__.py
+tests/                     # pytest; P3 writes test_metrics.py here
+  __init__.py
 reports/figures/           # saved EDA and diagnostic plots
+models/                    # gitignored — trained model files
 data/interim/              # gitignored
 data/processed/            # gitignored
 ```
 
-Add `data/interim/` and `data/processed/` coverage to `.gitignore` (the existing `data/` entry
-already covers them, but confirm — parquet files here run to several GB).
+Add `models/` to `.gitignore`. The existing `data/` entry already covers the data subdirectories,
+but confirm — parquet files there run to several GB.
+
+`reports/*.csv` are deliberately **not** gitignored: they are small, and committing them is what
+lets scores survive between sessions. Only `reports/figures/` holds large files; keep image output
+reasonable rather than ignoring the directory.
+
+## The `src/` import convention
+
+Notebooks live in `notebooks/` and import from `src/`, which does not work by default. Fix it once,
+here, so all five importing notebooks do it identically. Install the repo as editable:
+
+```bash
+./venv/Scripts/python.exe -m pip install -e .
+```
+
+with a minimal `pyproject.toml` at the repo root declaring `src` as a package. Then notebooks use a
+plain `from src.metrics import wrmsse` regardless of working directory.
+
+If that proves awkward, the fallback is a two-line cell at the top of each notebook:
+
+```python
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path.cwd().parent))
+```
+
+Pick one and record it in `DECISIONS.md`. **Do not hardcode absolute paths** — they break on any
+other machine, including CI.
 
 ## Verify
 
@@ -48,6 +79,7 @@ already covers them, but confirm — parquet files here run to several GB).
 ./venv/Scripts/python.exe -m pip install -r requirements.txt
 ./venv/Scripts/python.exe -c "import lightgbm, xgboost, statsforecast, pyarrow; print('ok')"
 ./venv/Scripts/python.exe -m ipykernel install --user --name m5 --display-name "M5"
+./venv/Scripts/python.exe -m pytest --version
 ```
 
 Likely friction points on this stack, worth surfacing now rather than in P6:
@@ -59,9 +91,12 @@ Likely friction points on this stack, worth surfacing now rather than in P6:
 ## Gate
 
 - [ ] `import lightgbm, xgboost, statsforecast, pyarrow` succeeds
+- [ ] `pytest --version` succeeds
 - [ ] Kernel `M5` appears in `jupyter kernelspec list`
+- [ ] `from src import …` works from a notebook in `notebooks/` (test with a stub)
 - [ ] Directory skeleton committed (with `.gitkeep` files where needed)
-- [ ] Installed versions recorded in `docs/plan/DECISIONS.md`
+- [ ] `models/` added to `.gitignore`
+- [ ] Installed versions and the chosen import convention recorded in `docs/plan/DECISIONS.md`
 
 ## Invariants
 

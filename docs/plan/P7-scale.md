@@ -74,6 +74,8 @@ Record in `DECISIONS.md` and the notebook:
 ## Gate
 
 - [ ] All configurations trained across 10 stores; StatsForecast over all 30,490 series
+- [ ] Models persisted to `models/full/<model>_<store>.<ext>`
+- [ ] `reports/full_scores.csv` written and committed
 - [ ] Model and blend weights selected on **CV only**, before the holdout is touched
 - [ ] Holdout WRMSSE computed exactly once, over the full 42,840 series
 - [ ] Breakdown by level, store, category, and ADI/CV² quadrant

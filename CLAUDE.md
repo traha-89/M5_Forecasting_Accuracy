@@ -48,6 +48,11 @@ and gate. Reading the whole plan to build one phase wastes context and is not re
 
 Record what was decided at each gate, and the number that justified it, in `docs/plan/DECISIONS.md`.
 
+**If a gate fails, stop and report — do not proceed to the next phase.** One phase, one notebook, one
+PR; don't start the next phase in the same session. Every artifact that crosses a phase boundary has
+a pinned path and schema in the data contract in `docs/plan/README.md` — load those by name rather
+than inventing paths.
+
 ### Forecast horizons
 
 `sales_train_evaluation.csv` covers `d_1`–`d_1941`; `calendar.csv` runs to `d_1969`.

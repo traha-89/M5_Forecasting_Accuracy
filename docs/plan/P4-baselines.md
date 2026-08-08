@@ -39,7 +39,11 @@ beautiful, meaningless score.
 
 ## Output
 
-A table, copied to `DECISIONS.md`:
+Write **`reports/baselines.csv`** with one row per baseline per fold:
+`baseline`, `fold`, `wrmsse`, `rmsse`, `wmae`, `bias_pct`. This file is committed — P6 and P7 load it
+rather than re-running the baselines.
+
+Also summarise in the notebook and copy to `DECISIONS.md`:
 
 | Baseline | WRMSSE (mean over folds) | RMSSE | WMAE | Bias % |
 |---|---|---|---|---|
@@ -50,6 +54,7 @@ bar to beat.
 ## Gate
 
 - [ ] All five baselines scored on all three folds
+- [ ] `reports/baselines.csv` written and committed
 - [ ] Seasonal-naive WRMSSE recorded in `DECISIONS.md`
 - [ ] All-zeros produces a finite score (re-confirms the P3 metric implementation)
 - [ ] Per-level WRMSSE reported for at least seasonal-naive, as a reference shape

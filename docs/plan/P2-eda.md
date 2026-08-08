@@ -41,8 +41,9 @@ classification (smooth, erratic, intermittent, lumpy):
 - CV² = squared coefficient of variation of non-zero demand
 - Standard cutoffs: ADI = 1.32, CV² = 0.49
 
-Persist the per-series quadrant label — **P7 reuses it for the segment breakdown that decides whether
-to route different models to different series.**
+Persist the per-series quadrant label to **`data/processed/series_segments.parquet`**
+(`id`, `adi` `float32`, `cv2` `float32`, `quadrant` `category`) — P6 and P7 reuse it for the segment
+breakdown that decides whether to route different models to different series.
 
 **Lifecycle.** Release dates over time; series that die mid-panel; the practical shape of "new item,
 no history".
@@ -65,7 +66,7 @@ Target at least 10 rows. A "reject" verdict is a valid and useful outcome.
 ## Gate
 
 - [ ] Hypothesis table complete, ≥10 rows, each citing a figure
-- [ ] ADI/CV² quadrant labels persisted to `data/processed/`
+- [ ] ADI/CV² quadrant labels persisted to `data/processed/series_segments.parquet`
 - [ ] Outlier handling policy decided and recorded in `DECISIONS.md`
 - [ ] Figures saved to `reports/figures/`
 
