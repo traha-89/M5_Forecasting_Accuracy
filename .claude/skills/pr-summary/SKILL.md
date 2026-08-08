@@ -15,11 +15,11 @@ Review every open pull request on this repository and report a concise summary o
 Check the GitHub CLI is available and authenticated before doing anything else:
 
 ```
-gh auth status
+!`gh auth status`
 ```
 
-If `gh` is missing or not authenticated, stop and tell the user how to fix it
-(`winget install GitHub.cli` on Windows, then `gh auth login`) rather than guessing.
+If the output above shows `gh` is missing or not authenticated, stop and tell the user how to fix
+it (`winget install GitHub.cli` on Windows, then `gh auth login`) rather than guessing.
 
 ## Steps
 
