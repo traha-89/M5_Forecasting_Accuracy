@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Nine-phase project plan for the M5 Walmart sales forecast.">
+
+<style>
+  /* minimal reset (the hosted artifact wrapper supplies its own; this is for standalone) */
+  *, *::before, *::after { box-sizing: border-box; }
+  body, h1, h2, h3, h4, p, ul, ol, dl, dd, figure { margin: 0; }
+  ul, ol { padding: 0; }
+  img, canvas { max-width: 100%; }
+  button, input, select, textarea { font: inherit; }
+</style>
+<title>M5 Forecasting Accuracy — Project Plan</title>
+<style>
+  :root {
+    --paper:      #F6F7F5;
+    --panel:      #FFFFFF;
+    --panel-alt:  #EFF2F0;
+    --ink:        #0F1C1E;
+    --ink-soft:   #2C3E40;
+    --muted:      #5C6E70;
+    --rule:       #D8DEDB;
+    --rule-soft:  #E6EAE8;
+    --accent:     #0E7C86;
+    --accent-dim: #C7E2E4;
+    --signal:     #B23A48;
+    --signal-dim: #F0DADD;
+    --shadow:     0 1px 2px rgba(15,28,30,.06), 0 8px 24px -16px rgba(15,28,30,.22);
+
+    --f-display: "Segoe UI Variable Display","Segoe UI",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+    --f-body: "Iowan Old Style","Charter",Georgia,"Times New Roman",serif;
+    --f-mono: ui-monospace,"Cascadia Mono","Cascadia Code",Consolas,"SF Mono",Menlo,monospace;
+
+    --measure: 68ch;
+    --gutter: 4.25rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #0C1315;
+      --panel:      #121D1F;
+      --panel-alt:  #172427;
+      --ink:        #E3EAE8;
+      --ink-soft:   #C3D0CE;
+      --muted:      #8AA0A1;
+      --rule:       #253437;
+      --rule-soft:  #1C2A2C;
+      --accent:     #4FBCC5;
+      --accent-dim: #1B3E42;
+      --signal:     #E28189;
+      --signal-dim: #3A2126;
+      --shadow:     0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #0C1315;
+    --panel:      #121D1F;
+    --panel-alt:  #172427;
+    --ink:        #E3EAE8;
+    --ink-soft:   #C3D0CE;
+    --muted:      #8AA0A1;
+    --rule:       #253437;
+    --rule-soft:  #1C2A2C;
+    --accent:     #4FBCC5;
+    --accent-dim: #1B3E42;
+    --signal:     #E28189;
+    --signal-dim: #3A2126;
+    --shadow:     0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+    padding: 0 1.25rem 6rem;
+  }
+
+  .wrap {
+    max-width: calc(var(--measure) + var(--gutter));
+    margin: 0 auto;
+    padding-left: var(--gutter);
+  }
+  @media (max-width: 720px) {
+    .wrap { padding-left: 0; --gutter: 0rem; }
+    body { font-size: 16px; }
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead { padding: 3.5rem 0 0; }
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: .715rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+    align-items: baseline;
+  }
+  .eyebrow b { color: var(--accent); font-weight: 600; }
+  .masthead h1 {
+    font-family: var(--f-display);
+    font-weight: 700;
+    letter-spacing: -.028em;
+    font-size: clamp(2.1rem, 5.4vw, 3.05rem);
+    line-height: 1.06;
+    text-wrap: balance;
+    margin: .85rem 0 0;
+  }
+  .standfirst {
+    color: var(--ink-soft);
+    font-size: 1.08rem;
+    margin: 1rem 0 0;
+    max-width: 60ch;
+  }
+
+  /* ---------- panel graphic ---------- */
+
+  figure { margin: 2.5rem 0 0; }
+  .panel-fig {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1.1rem 1.1rem .9rem;
+    box-shadow: var(--shadow);
+  }
+  #panel { display: block; width: 100%; height: 132px; }
+  .axis {
+    display: flex;
+    margin-top: .5rem;
+    font-family: var(--f-mono);
+    font-size: .68rem;
+    line-height: 1.35;
+    color: var(--muted);
+  }
+  .axis > div { border-top: 2px solid currentColor; padding-top: .4rem; }
+  .axis .z-train    { flex: 144; color: var(--muted); }
+  .axis .z-holdout  { flex: 28;  color: var(--accent); margin-left: 3px; }
+  .axis .z-forecast { flex: 28;  color: var(--signal); margin-left: 3px; }
+  .axis strong { display: block; font-weight: 600; letter-spacing: .04em; }
+  figcaption {
+    font-family: var(--f-mono);
+    font-size: .7rem;
+    color: var(--muted);
+    margin-top: .95rem;
+    line-height: 1.55;
+  }
+
+  /* ---------- typography ---------- */
+
+  h2, h3, h4 {
+    font-family: var(--f-display);
+    letter-spacing: -.02em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  h2 { font-size: 1.52rem; font-weight: 700; line-height: 1.18; }
+  h3 { font-size: 1.06rem; font-weight: 650; margin: 2rem 0 .55rem; }
+  h4 {
+    font-family: var(--f-mono);
+    font-size: .715rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 1.8rem 0 .6rem;
+  }
+  p { margin: 0 0 1rem; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  code, .m {
+    font-family: var(--f-mono);
+    font-size: .845em;
+    background: var(--panel-alt);
+    border-radius: 2px;
+    padding: .08em .34em;
+    font-variant-numeric: tabular-nums;
+  }
+  strong { font-weight: 700; color: var(--ink); }
+
+  ul, ol { margin: 0 0 1rem; padding-left: 1.25rem; }
+  li { margin-bottom: .38rem; }
+  li::marker { color: var(--muted); }
+
+  /* ---------- sections ---------- */
+
+  section { padding-top: 2.9rem; }
+  .rule { border-top: 1px solid var(--rule); margin-top: 2.9rem; }
+
+  .sec-head { position: relative; }
+  .sec-head .code {
+    font-family: var(--f-mono);
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    color: var(--accent);
+  }
+  @media (min-width: 721px) {
+    .sec-head .code {
+      position: absolute;
+      left: calc(-1 * var(--gutter));
+      top: .42rem;
+      width: calc(var(--gutter) - 1rem);
+      text-align: right;
+    }
+  }
+  @media (max-width: 720px) {
+    .sec-head .code { display: block; margin-bottom: .3rem; }
+  }
+
+  /* ---------- meta strip ---------- */
+
+  .meta {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: .3rem .95rem;
+    font-family: var(--f-mono);
+    font-size: .74rem;
+    line-height: 1.5;
+    margin: 1rem 0 1.35rem;
+    padding: .8rem .95rem;
+    background: var(--panel-alt);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 3px 3px 0;
+  }
+  .meta dt { color: var(--muted); letter-spacing: .08em; text-transform: uppercase; font-size: .68rem; padding-top: .1em; }
+  .meta dd { margin: 0; color: var(--ink-soft); }
+  .meta dd.gate { color: var(--signal); }
+
+  /* ---------- callout ---------- */
+
+  .callout {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1.15rem 1.25rem;
+    margin: 1.5rem 0;
+  }
+  .callout.key { border-left: 3px solid var(--signal); }
+  .callout > :last-child { margin-bottom: 0; }
+  .callout h4 { margin-top: 0; }
+  .callout.key h4 { color: var(--signal); }
+
+  /* ---------- tables ---------- */
+
+  .scroll { overflow-x: auto; margin: 1.1rem 0 1.4rem; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 34rem;
+    font-family: var(--f-mono);
+    font-size: .755rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.48;
+  }
+  th, td {
+    text-align: left;
+    padding: .52rem .7rem;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+  th {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: .67rem;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { text-align: right; white-space: nowrap; }
+  .tag {
+    display: inline-block;
+    font-size: .65rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: .12em .45em;
+    border-radius: 2px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .tag.base { background: var(--panel-alt); color: var(--muted); }
+  .tag.risk { background: var(--signal-dim); color: var(--signal); }
+
+  /* ---------- decisions ---------- */
+
+  .decisions {
+    display: grid;
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 1.4rem 0;
+  }
+  @media (min-width: 640px) { .decisions { grid-template-columns: repeat(3, 1fr); } }
+  .decisions > div { background: var(--panel); padding: .95rem 1rem; }
+  .decisions dt {
+    font-family: var(--f-mono);
+    font-size: .66rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .35rem;
+  }
+  .decisions dd { margin: 0; font-size: .92rem; line-height: 1.42; color: var(--ink); }
+
+  /* ---------- misc ---------- */
+
+  details {
+    border-top: 1px solid var(--rule-soft);
+    padding: .7rem 0;
+  }
+  summary {
+    cursor: pointer;
+    font-family: var(--f-mono);
+    font-size: .76rem;
+    color: var(--accent);
+    letter-spacing: .02em;
+  }
+  details[open] summary { margin-bottom: .7rem; }
+  details > :last-child { margin-bottom: .2rem; }
+
+  .foot {
+    margin-top: 3rem;
+    padding-top: 1.3rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--f-mono);
+    font-size: .72rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>M5 Forecasting Accuracy</span><span>&middot;</span>
+      <span>Walmart CA / TX / WI</span><span>&middot;</span>
+      <b>Project plan v1 &mdash; for review</b>
+    </div>
+    <h1>From raw panel to a 28&#8209;day store&#8211;item forecast</h1>
+    <p class="standfirst">
+      Nine phases, each one notebook and one pull request, taking 30,490 daily sales series
+      through hygiene, EDA, a scored metric, baselines, features, four candidate models, and a
+      final forecast for <span class="m">d_1942</span>&ndash;<span class="m">d_1969</span>.
+    </p>
+  </header>
+
+  <figure>
+    <div class="panel-fig">
+      <canvas id="panel" aria-label="Sparse sales panel over the last 200 days, split into training, holdout, and forecast zones. The forecast zone is empty."></canvas>
+      <div class="axis">
+        <div class="z-train"><strong>d_1770 &rarr; d_1913</strong>train &amp; cross-validate</div>
+        <div class="z-holdout"><strong>d_1914 &rarr; d_1941</strong>holdout &mdash; do not touch</div>
+        <div class="z-forecast"><strong>d_1942 &rarr; d_1969</strong>the deliverable</div>
+      </div>
+    </div>
+    <figcaption>
+      A sample of the real panel shape: each mark is one item&ndash;store&ndash;day with a sale, each row one
+      series. Roughly 68% of the grid is zero. The right-hand block is empty because that is exactly
+      what we are being asked to fill in.
+    </figcaption>
+  </figure>
+
+  <!-- ============================================================ -->
+  <div class="rule"></div>
+  <section id="frame">
+    <div class="sec-head">
+      <span class="code">§1</span>
+      <h2>How the horizons actually line up</h2>
+    </div>
+
+    <p>
+      This is the single thing most M5 write-ups get muddled, and every later phase depends on
+      getting it right, so it goes first.
+    </p>
+    <p>
+      <span class="m">sales_train_evaluation.csv</span> carries <span class="m">d_1</span>&ndash;<span class="m">d_1941</span>
+      (2011-01-29 &rarr; 2016-05-22). <span class="m">calendar.csv</span> runs 28 days further, to
+      <span class="m">d_1969</span> (2016-06-19). That extra calendar stretch is not an accident &mdash; it exists so
+      the competition's private test period could have features built for it. Which gives us three
+      distinct regions:
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Region</th><th>Days</th><th>Dates</th><th>Actuals?</th><th>Use</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Training</td>
+            <td>d_1 &ndash; d_1913</td>
+            <td>2011-01-29 &rarr; 2016-04-24</td>
+            <td>yes</td>
+            <td>Fit + rolling-origin CV. Everything through P6 lives here.</td>
+          </tr>
+          <tr>
+            <td>Holdout</td>
+            <td>d_1914 &ndash; d_1941</td>
+            <td>2016-04-25 &rarr; 2016-05-22</td>
+            <td><strong>yes</strong></td>
+            <td>The honest test set. Scored exactly once, in P7.</td>
+          </tr>
+          <tr>
+            <td>Forecast</td>
+            <td>d_1942 &ndash; d_1969</td>
+            <td>2016-05-23 &rarr; 2016-06-19</td>
+            <td>no</td>
+            <td>The final output. Refit on all 1,941 days, predict.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout key">
+      <h4>The discipline rule</h4>
+      <p>
+        Because the holdout actuals are sitting right there in the CSV we already have, it is trivially
+        easy to peek &mdash; tune against <span class="m">d_1914</span>&ndash;<span class="m">d_1941</span>, and the reported
+        score becomes fiction. <strong>Model selection, hyperparameters, and ensemble weights are all decided
+        on rolling-origin folds that end at <span class="m">d_1913</span> or earlier.</strong> The holdout is scored once,
+        at the P7 gate, and whatever it says is what we report.
+      </p>
+    </div>
+
+    <p>
+      Two consequences worth noting now. First, <span class="m">sales_train_validation.csv</span> is redundant &mdash;
+      its <span class="m">d_1</span>&ndash;<span class="m">d_1913</span> columns should be byte-identical to the evaluation
+      file's. P1 asserts that once, then we work only from the evaluation file. Second,
+      <span class="m">sample_submission.csv</span>'s 60,980 rows are two stacked blocks of 30,490: the
+      <span class="m">_validation</span> ids want <span class="m">d_1914</span>&ndash;<span class="m">d_1941</span> and the
+      <span class="m">_evaluation</span> ids want <span class="m">d_1942</span>&ndash;<span class="m">d_1969</span>. We can
+      fill both, which is a nice free consistency check.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <div class="rule"></div>
+  <section id="granularity">
+    <div class="sec-head">
+      <span class="code">§2</span>
+      <h2>Forecast granularity &mdash; one model per item, or not</h2>
+    </div>
+
+    <p>
+      You asked how to handle the item&ndash;store granularity specifically. Here is the recommendation
+      and the reasoning, because this decision drives the whole modeling design.
+    </p>
+
+    <h3>Not one model per series</h3>
+    <p>
+      Fitting 30,490 separate models is the intuitive read of "item-level forecast" and it is the wrong
+      call here. Each series has at most 1,941 observations, around two-thirds of them zero, and many
+      products were released partway through &mdash; so a per-series model is fitting a handful of effective
+      data points. Worse, it cannot learn anything transferable: that Easter suppresses HOBBIES, that
+      a price cut lifts a FOODS item, that SNAP days matter in Texas. Those patterns are shared across
+      items, and a per-series model throws that sharing away. On this box, 30,490 fits is also simply
+      not going to happen.
+    </p>
+
+    <h3>Global models, partitioned by store</h3>
+    <p>
+      Instead: one model learns across many series at once, with <span class="m">item_id</span>,
+      <span class="m">dept_id</span>, <span class="m">cat_id</span> and <span class="m">store_id</span> as categorical
+      features, so cross-series structure is learned rather than discarded. A single truly global model
+      over all 59.2M rows would strain 16&nbsp;GB, so we cut it into <strong>ten partitions, one per store</strong>
+      &mdash; about 3,049 series and 5.9M rows each.
+    </p>
+    <p>
+      That partition is not just a memory convenience, it is the right seam. SNAP schedules are
+      state-specific, price levels and assortment differ by store, and store-level demand regimes are
+      visibly distinct in the M5 data. Ten models fit comfortably, train in parallel-ish batches, and
+      each keeps full cross-item learning within its store. If a store partition still runs hot, the
+      fallback is store &times; category (30 partitions).
+    </p>
+
+    <h3>Where per-series does earn its place</h3>
+    <p>
+      The Nixtla <span class="m">StatsForecast</span> arm <em>is</em> per-series &mdash; that library is built to fit
+      thousands of small classical models across cores efficiently, and intermittent-demand methods
+      like Croston and TSB are per-series by construction. So the shortlist deliberately contains both
+      shapes, and P7 checks whether they disagree in an exploitable way.
+    </p>
+
+    <div class="callout">
+      <h4>The segmentation question we defer to P7</h4>
+      <p>
+        Rather than guessing now, P2 classifies every series on the ADI / CV&sup2; quadrant
+        (smooth, erratic, intermittent, lumpy) and P7 reports each model's error <em>within each quadrant</em>.
+        If the gradient-boosted models win on dense series while Croston-family methods win on the
+        genuinely sparse ones &mdash; a common finding &mdash; then routing by segment is justified by evidence
+        rather than by folklore. If they don't, we take the single best model and skip the complexity.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <div class="rule"></div>
+  <section id="decisions">
+    <div class="sec-head">
+      <span class="code">§3</span>
+      <h2>Decisions taken</h2>
+    </div>
+
+    <dl class="decisions">
+      <div>
+        <dt>Model shortlist</dt>
+        <dd>LightGBM &times;2 (Tweedie, Poisson), Nixtla StatsForecast ensemble, XGBoost.</dd>
+      </div>
+      <div>
+        <dt>Sequencing</dt>
+        <dd>Pilot the full pipeline on store <span class="m">CA_1</span>, then scale to all ten.</dd>
+      </div>
+      <div>
+        <dt>Deliverable form</dt>
+        <dd>Numbered Jupyter notebooks throughout, one per phase.</dd>
+      </div>
+    </dl>
+
+    <p>
+      One caveat on notebooks-throughout, so it isn't a surprise later: the metric code (P3) and the
+      feature builder (P5) get imported by four or five downstream notebooks each. Copy-pasting those
+      between notebooks will cause silent drift &mdash; a feature defined one way in the pilot and another way
+      at full scale is a genuinely nasty bug class. Suggested compromise: notebooks stay the narrative
+      and the analysis, but P3 and P5 each also write a thin <span class="m">src/</span> module that the
+      notebook itself imports and demonstrates. Everything else stays in the notebook. Happy to skip
+      this if you'd rather keep it strictly notebook-only.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <div class="rule"></div>
+  <section id="phases">
+    <div class="sec-head">
+      <span class="code">§4</span>
+      <h2>The phases</h2>
+    </div>
+    <p>
+      Each phase is one notebook and one PR against <span class="m">main</span>, using the repo's PR template.
+      Every phase has a gate &mdash; a concrete, checkable condition. If a gate fails we fix it there rather
+      than carrying the problem forward.
+    </p>
+  </section>
+
+  <section id="p0">
+    <div class="sec-head">
+      <span class="code">P0</span>
+      <h2>Environment &amp; scaffolding</h2>
+    </div>
+    <dl class="meta">
+      <dt>Output</dt><dd>requirements.txt, directory skeleton</dd>
+      <dt>Effort</dt><dd>~half a session</dd>
+      <dt>Gate</dt><dd class="gate">All four model libraries import; kernel registered</dd>
+    </dl>
+    <p>
+      Add to <span class="m">requirements.txt</span>: <span class="m">pyarrow</span> (parquet),
+      <span class="m">lightgbm</span>, <span class="m">xgboost</span>, <span class="m">statsforecast</span>,
+      <span class="m">scikit-learn</span>, <span class="m">jupyterlab</span>, <span class="m">ipykernel</span>,
+      <span class="m">tqdm</span>. Create <span class="m">notebooks/</span>, <span class="m">reports/figures/</span>,
+      and gitignored <span class="m">data/interim/</span> + <span class="m">data/processed/</span> for parquet.
+    </p>
+    <p>
+      Worth verifying at this point rather than discovering in P6: LightGBM and XGBoost wheels install
+      cleanly on Python 3.11 / Windows without a compiler, and <span class="m">statsforecast</span> pulls
+      <span class="m">numba</span>, which is the most likely install friction on this stack.
+    </p>
+  </section>
+
+  <section id="p1">
+    <div class="sec-head">
+      <span class="code">P1</span>
+      <h2>Load &amp; hygiene check</h2>
+    </div>
+    <dl class="meta">
+      <dt>Output</dt><dd>01_data_hygiene.ipynb &rarr; sales_long.parquet</dd>
+      <dt>Effort</dt><dd>1 session</dd>
+      <dt>Gate</dt><dd class="gate">Assertion suite passes; long-format parquet written &amp; row count recorded</dd>
+    </dl>
+    <p>
+      Load with explicit dtypes from the start &mdash; day columns as <span class="m">int16</span>, id columns as
+      <span class="m">category</span>. Naive <span class="m">read_csv</span> on the wide file costs several GB in
+      object dtype for no reason; typed, it is around 120&nbsp;MB.
+    </p>
+
+    <h4>Structural assertions</h4>
+    <ul>
+      <li>30,490 unique ids; <span class="m">id</span> decomposes exactly into <span class="m">item_id</span> + <span class="m">store_id</span>.</li>
+      <li>Evaluation and validation files agree on <span class="m">d_1</span>&ndash;<span class="m">d_1913</span>.</li>
+      <li>Calendar has 1,969 contiguous dates, no gaps, and <span class="m">wm_yr_wk</span> maps consistently to date.</li>
+      <li>10 stores &times; 3,049 items; 3 states, 3 categories, 7 departments.</li>
+      <li>Submission template has 60,980 rows in two id blocks.</li>
+    </ul>
+
+    <h4>Content checks</h4>
+    <ul>
+      <li><strong>Negative or implausible sales</strong> &mdash; expect none; flag loudly if present.</li>
+      <li><strong>Price coverage.</strong> A missing <span class="m">sell_prices</span> row means the item was not on sale in that store that week &mdash; almost always pre-release. Quantify the leading gap per series; this becomes the release date and lets us drop roughly 12&ndash;13% of rows that are structural zeros, not demand signal.</li>
+      <li><strong>Christmas closures.</strong> Stores close 25 Dec; every series should read zero on those five dates. Confirm, and mark them so they don't get modeled as demand collapse.</li>
+      <li><strong>Sparsity profile</strong> &mdash; zero fraction overall and by category, store, department.</li>
+      <li><strong>Dead series</strong> &mdash; items with no sales in the final 60 days, which need a decision (forecast zero, or let the model decide).</li>
+      <li>Event columns: nulls are meaningful ("no event"), not missing data. Duplicate price rows: expect none.</li>
+    </ul>
+    <p>
+      Then melt to long <span class="m">(id, d, sales)</span>, join calendar and prices, drop pre-release rows, and
+      persist as parquet. Full melt is 30,490 &times; 1,941 = <strong>59,181,090 rows</strong>, dropping to roughly
+      46&ndash;47M after the pre-release cut.
+    </p>
+  </section>
+
+  <section id="p2">
+    <div class="sec-head">
+      <span class="code">P2</span>
+      <h2>Exploratory analysis</h2>
+    </div>
+    <dl class="meta">
+      <dt>Output</dt><dd>02_eda.ipynb + reports/figures/</dd>
+      <dt>Effort</dt><dd>1&ndash;2 sessions</dd>
+      <dt>Gate</dt><dd class="gate">A written findings &rarr; feature-hypothesis table, each row citing its evidence</dd>
+    </dl>
+    <p>
+      EDA here has a job beyond description: every plot should either kill or justify a candidate
+      feature. The gate is that table, not the figure count.
+    </p>
+    <ul>
+      <li><strong>Trend and level</strong> &mdash; total units over time, then split by state, store, category, department. Is growth real or assortment expansion?</li>
+      <li><strong>Seasonality</strong> &mdash; day-of-week profile (strong and category-dependent), month-of-year, and the annual shape. Weekend lift differs between FOODS and HOBBIES.</li>
+      <li><strong>SNAP.</strong> Food-stamp disbursement days should visibly lift FOODS, on a state-specific schedule. Quantify the lift per state &mdash; this is one of the highest-value features in the dataset.</li>
+      <li><strong>Events.</strong> Effect size per event name and type (Sporting, Cultural, National, Religious), including lead-up and hangover days. Super Bowl, Thanksgiving, Easter, and Christmas behave very differently from one another.</li>
+      <li><strong>Price.</strong> Distribution and dispersion; sales response to a price change; how often prices move; whether an item's price relative to its own history predicts better than the raw level.</li>
+      <li><strong>Intermittency.</strong> Distribution of zero-fraction across series, and the ADI / CV&sup2; quadrant classification that P7 reuses for segment diagnostics.</li>
+      <li><strong>Lifecycle.</strong> Release dates over time; series that die mid-panel; the practical shape of "new item, no history".</li>
+      <li><strong>Outliers.</strong> Extreme single-day spikes &mdash; distinguish genuine promotional demand (keep, it is signal) from implausible values. Given RMSSE squares errors, a handful of spikes can dominate a series' score, so decide the handling policy here and record it.</li>
+    </ul>
+  </section>
+
+  <section id="p3">
+    <div class="sec-head">
+      <span class="code">P3</span>
+      <h2>The metric &mdash; before any model</h2>
+    </div>
+    <dl class="meta">
+      <dt>Output</dt><dd>03_metrics.ipynb + src/metrics.py</dd>
+      <dt>Effort</dt><dd>1 session</dd>
+      <dt>Gate</dt><dd class="gate">WRMSSE matches a hand-computed value on a toy panel; unit tests pass</dd>
+    </dl>
+    <p>
+      Metric code comes before baselines and models deliberately. A subtly wrong WRMSSE silently
+      invalidates every comparison downstream, and it is far cheaper to get right against a
+      hand-computed toy example than to debug from a suspicious leaderboard later.
+    </p>
+
+    <h4>WRMSSE, concretely</h4>
+    <p>
+      For each series, <span class="m">RMSSE = sqrt( mean(&#40;y &minus; &#375;&#41;&sup2;) / mean(&#40;y&#8348; &minus; y&#8348;&#8331;&#8321;&#41;&sup2;) )</span> &mdash;
+      squared forecast error over the horizon, scaled by the in-sample one-step naive error. Two details
+      that are easy to miss and both change the number materially:
+    </p>
+    <ul>
+      <li>The denominator is computed <strong>only from the series' first non-zero sale onward</strong>. Include the leading zeros and the scale is understated, flattering the model.</li>
+      <li>Weights are each series' <strong>share of dollar sales over the final 28 training days</strong> &mdash; units &times; price, normalized within each aggregation level.</li>
+    </ul>
+    <p>
+      This is then computed across all <strong>12 aggregation levels</strong> &mdash; total, state, store, category,
+      department, and their crossings, down to item&ndash;store &mdash; which is <strong>42,840 series in total</strong>.
+      WRMSSE is the unweighted mean of the twelve weighted level scores. So a model can be excellent at
+      the item&ndash;store level and still score badly if its aggregates are biased, which is worth knowing
+      early.
+    </p>
+
+    <h4>Supporting metrics</h4>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Metric</th><th>Role</th><th>Why it earns a slot</th></tr></thead>
+        <tbody>
+          <tr><td>WRMSSE</td><td><span class="tag">primary</span></td><td>The competition metric. Everything is decided on this.</td></tr>
+          <tr><td>RMSSE, unweighted</td><td>diagnostic</td><td>Bottom level only, equal weight. Separates "good at the big items" from "good everywhere".</td></tr>
+          <tr><td>MAE / WMAE</td><td>diagnostic</td><td>Absolute-error view; far less spike-dominated than squared error, so disagreement with RMSSE localizes outlier sensitivity.</td></tr>
+          <tr><td>MASE</td><td>diagnostic</td><td>Same scaling idea in absolute terms &mdash; a widely legible cross-check.</td></tr>
+          <tr><td>Total bias %</td><td>guardrail</td><td>Count models systematically under-forecast. A blunt bias number catches it immediately.</td></tr>
+          <tr><td>Per-level WRMSSE</td><td>diagnostic</td><td>The twelve components separately. The most useful debugging output of the whole project.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Deliberately excluded: <strong>sMAPE and MAPE</strong>. Both divide by actuals, and with roughly 68% zeros
+      they are undefined or explosive across most of this dataset.
+    </p>
+  </section>
+
+  <section id="p4">
+    <div class="sec-head">
+      <span class="code">P4</span>
+      <h2>Baselines</h2>
+    </div>
+    <dl class="meta">
+      <dt>Output</dt><dd>04_baselines.ipynb</dd>
+      <dt>Effort</dt><dd>~half a session</dd>
+      <dt>Gate</dt><dd class="gate">A scored baseline table &mdash; the number every model must beat</dd>
+    </dl>
+    <p>
+      Five baselines, cheap to compute and jointly quite informative:
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Baseline</th><th>Definition</th><th>What it tells us</th></tr></thead>
+        <tbody>
+          <tr><td>Naive</td><td>Repeat <span class="m">d_1913</span> for 28 days</td><td>Floor. Anything losing to this is broken.</td></tr>
+          <tr><td>Seasonal naive</td><td>Same weekday, one week back</td><td>The real bar &mdash; captures the strongest signal in the data for free.</td></tr>
+          <tr><td>Moving average 28</td><td>Mean of last 28 days</td><td>Level without seasonality; isolates how much day-of-week is worth.</td></tr>
+          <tr><td>Weekday mean</td><td>Mean of that weekday over last 8 weeks</td><td>Level + seasonality, still trivial. Surprisingly competitive.</td></tr>
+          <tr><td>All zeros</td><td>Predict 0 everywhere</td><td>A sanity anchor. On sparse series this scores better than intuition suggests, and it exposes any metric bug fast.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Scored on the same rolling-origin folds the models will use, so the comparison in P6&ndash;P7 is
+      apples to apples.
+    </p>
+  </section>
+
+  <section id="p5">
+    <div class="sec-head">
+      <span class="code">P5</span>
+      <h2>Feature engineering</h2>
+    </div>
+    <dl class="meta">
+      <dt>Output</dt><dd>05_features.ipynb + src/features.py</dd>
+      <dt>Effort</dt><dd>1&ndash;2 sessions</dd>
+      <dt>Gate</dt><dd class="gate">CA_1 features build in &lt;5 min under 8 GB peak; every feature justified against leakage</dd>
+    </dl>
+
+    <div class="callout key">
+      <h4>The lag-28 constraint</h4>
+      <p>
+        We forecast 28 days ahead in one shot, so on the last day of the horizon the most recent
+        <em>observed</em> sale is 28 days old. <strong>Every lag and rolling window is therefore anchored at
+        lag&nbsp;28 or longer.</strong> That gives a single non-recursive model valid across the whole horizon
+        &mdash; no error compounding, no recursive prediction loop, and it is the design that proved most
+        robust in the actual competition.
+      </p>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Family</th><th>Features</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Calendar</td>
+            <td>wday, month, year, week-of-year, day-of-month, is_weekend, days since panel start</td>
+          </tr>
+          <tr>
+            <td>Events</td>
+            <td>event_name_1/2, event_type_1/2 as categoricals; days-to and days-since nearest event</td>
+          </tr>
+          <tr>
+            <td>SNAP</td>
+            <td>snap flag matched to the series' own state (not all three columns)</td>
+          </tr>
+          <tr>
+            <td>Price</td>
+            <td>sell_price; price / item's rolling mean; price / item's historical max; price change flag; weeks since last price change; price rank within dept&times;store; count of distinct prices</td>
+          </tr>
+          <tr>
+            <td>Lags</td>
+            <td>sales at lag 28, 29, 30, 35, 42, 49, 56, 364</td>
+          </tr>
+          <tr>
+            <td>Rolling</td>
+            <td>mean / std / max over 7, 14, 30, 60, 180 windows, all computed on lag-28 sales; same-weekday rolling mean</td>
+          </tr>
+          <tr>
+            <td>Intermittency</td>
+            <td>days since last non-zero sale; non-zero count in last 28 / 60; mean sales conditional on non-zero</td>
+          </tr>
+          <tr>
+            <td>Identity</td>
+            <td>item_id, dept_id, cat_id, store_id, state_id as native LightGBM categoricals</td>
+          </tr>
+          <tr>
+            <td>Encodings</td>
+            <td>mean sales by item, item&times;store, dept&times;store, cat&times;wday &mdash; <strong>fit on training folds only</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Memory discipline</h4>
+    <p>
+      Non-negotiable on 16&nbsp;GB: sales as <span class="m">int16</span>, all engineered features as
+      <span class="m">float32</span>, ids as <span class="m">category</span>, and build features
+      <strong>per store, writing one parquet partition each</strong>. Building all ten stores in one frame is the
+      obvious way to run out of memory. At float32 across ~60 features, one store partition is roughly
+      1.4&nbsp;GB &mdash; comfortable; all ten at once would be around 14&nbsp;GB, which is not.
+    </p>
+  </section>
+
+  <section id="p6">
+    <div class="sec-head">
+      <span class="code">P6</span>
+      <h2>Model pilot on CA_1</h2>
+    </div>
+    <dl class="meta">
+      <dt>Output</dt><dd>06_model_pilot.ipynb</dd>
+      <dt>Effort</dt><dd>2&ndash;3 sessions</dd>
+      <dt>Gate</dt><dd class="gate">At least one model clearly beats seasonal-naive; runtimes measured and extrapolated to 10 stores</dd>
+    </dl>
+    <p>
+      The whole point of piloting: iterate in minutes on 3,049 series, so design errors surface before
+      they cost hours. Everything downstream is a rerun of this notebook at wider scope.
+    </p>
+
+    <h4>Validation design</h4>
+    <p>
+      Rolling-origin, three folds of 28 days ending <span class="m">d_1857</span>, <span class="m">d_1885</span>,
+      <span class="m">d_1913</span>, each trained only on days before its fold. No random splits, ever &mdash;
+      shuffling a time series leaks the future into the past and produces a beautiful, meaningless score.
+    </p>
+
+    <h4>The four candidates</h4>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Model</th><th>Shape</th><th>Configuration</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>LightGBM&nbsp;Tweedie</td><td>global / store</td>
+            <td><span class="m">objective=tweedie</span>, <span class="m">variance_power&nbsp;1.1</span>, lr&nbsp;0.03, 128 leaves, early stopping</td>
+            <td>Tweedie handles the zero-inflated, positively-skewed count distribution directly. This family won M5.</td>
+          </tr>
+          <tr>
+            <td>LightGBM&nbsp;Poisson</td><td>global / store</td>
+            <td><span class="m">objective=poisson</span>, otherwise matched</td>
+            <td>Same features, different loss &mdash; isolates how much the objective alone is worth, and the two blend well.</td>
+          </tr>
+          <tr>
+            <td>XGBoost</td><td>global / store</td>
+            <td><span class="m">tree_method=hist</span>, <span class="m">count:poisson</span>, depth 8, eta 0.03</td>
+            <td>Different split algorithm and regularization on identical features &mdash; a real check that results aren't a LightGBM artifact.</td>
+          </tr>
+          <tr>
+            <td>StatsForecast</td><td>per series</td>
+            <td>CrostonOptimized, ADIDA, IMAPA, TSB, SeasonalNaive, DynamicOptimizedTheta</td>
+            <td>Purpose-built for intermittent demand, no feature engineering, and the only per-series arm &mdash; the contrast is informative on its own.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Hyperparameter work stays light: sane defaults, early stopping, and a small sweep on learning rate
+      and leaf count. On M5, features and validation design move the score far more than tuning does,
+      and an exhaustive search on this hardware is not a good use of the time.
+    </p>
+
+    <details>
+      <summary>Alternative horizon strategy, if the single-model approach underperforms</summary>
+      <p>
+        The main alternative used by strong M5 solutions is to split the horizon into four 7-day blocks
+        and fit a separate model per block. Days 1&ndash;7 can then use lags as short as 7, which is
+        genuinely more information than the lag-28 constraint allows. Cost: 4&times; the models and 4&times;
+        the training time. Worth testing in the pilot precisely because it is cheap there &mdash; the decision
+        can then be made on evidence before it costs ten stores' worth of compute.
+      </p>
+    </details>
+  </section>
+
+  <section id="p7">
+    <div class="sec-head">
+      <span class="code">P7</span>
+      <h2>Scale out, evaluate, select</h2>
+    </div>
+    <dl class="meta">
+      <dt>Output</dt><dd>07_model_full.ipynb + model card</dd>
+      <dt>Effort</dt><dd>2&ndash;3 sessions, plus overnight runs</dd>
+      <dt>Gate</dt><dd class="gate">Holdout WRMSSE reported once, with a full comparison table and per-level breakdown</dd>
+    </dl>
+    <p>
+      Train each configuration across all ten store partitions and run StatsForecast over the full
+      30,490 series. Expect roughly 2&ndash;4 hours per gradient-boosting configuration on 8 cores, so
+      this phase is scheduled around overnight runs rather than interactive iteration &mdash; another reason
+      the design questions get settled in P6.
+    </p>
+    <ul>
+      <li>Score every model and baseline on the CV folds; pick the winner and any blend weights <strong>there</strong>.</li>
+      <li>Then, once: score on the true holdout <span class="m">d_1914</span>&ndash;<span class="m">d_1941</span>, full 42,840-series WRMSSE.</li>
+      <li>Break results down per aggregation level, per store, per category, and per ADI/CV&sup2; segment.</li>
+      <li>Decide on segment routing &mdash; per §2, only if the segment breakdown actually supports it.</li>
+      <li>Check calibration: predicted vs actual totals at each level, and the bias number.</li>
+    </ul>
+    <p>
+      Deliverable is a model card: chosen approach, holdout WRMSSE, the comparison against all five
+      baselines, known weaknesses, and runtime.
+    </p>
+  </section>
+
+  <section id="p8">
+    <div class="sec-head">
+      <span class="code">P8</span>
+      <h2>Final forecast</h2>
+    </div>
+    <dl class="meta">
+      <dt>Output</dt><dd>08_final_forecast.ipynb + submission.csv + README</dd>
+      <dt>Effort</dt><dd>1 session</dd>
+      <dt>Gate</dt><dd class="gate">60,980 rows, non-negative, no NaN, totals plausible against recent actuals</dd>
+    </dl>
+    <p>
+      Refit the selected model on the full <span class="m">d_1</span>&ndash;<span class="m">d_1941</span> history &mdash;
+      including the holdout, which is now legitimate since selection is finished &mdash; and forecast
+      <span class="m">d_1942</span>&ndash;<span class="m">d_1969</span>. Build features for the forecast window from
+      <span class="m">calendar.csv</span> and the final observed prices.
+    </p>
+    <p>
+      Pre-flight checks before writing the file: exactly 60,980 rows in the template's id order; all
+      predictions finite and &ge; 0; forecast totals within a plausible band of the last 28 observed days
+      allowing for trend and seasonality; no series forecast flat-zero unless it is genuinely dead;
+      and the <span class="m">F1</span>&ndash;<span class="m">F28</span> profile showing the expected weekly shape rather
+      than a suspiciously smooth line. Finish with a README write-up of approach, results, and what we'd
+      do next.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <div class="rule"></div>
+  <section id="risks">
+    <div class="sec-head">
+      <span class="code">§5</span>
+      <h2>Risks worth pricing in now</h2>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Risk</th><th>Severity</th><th>Mitigation</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Out-of-memory during feature build</td>
+            <td><span class="tag risk">high</span></td>
+            <td>Per-store partitions, float32/int16 throughout, parquet round-trips between stages. The P5 gate measures peak RAM explicitly rather than hoping.</td>
+          </tr>
+          <tr>
+            <td>WRMSSE implemented subtly wrong</td>
+            <td><span class="tag risk">high</span></td>
+            <td>P3 precedes all modeling; validated against a hand-computed toy panel and unit tests. The all-zeros baseline is a second independent check.</td>
+          </tr>
+          <tr>
+            <td>Leakage via target encodings or rolling stats</td>
+            <td><span class="tag risk">high</span></td>
+            <td>Encodings fit on training folds only; all lags &ge; 28; rolling windows anchored at lag 28. Reviewed as an explicit P5 gate item.</td>
+          </tr>
+          <tr>
+            <td>Peeking at the holdout</td>
+            <td><span class="tag risk">high</span></td>
+            <td>Holdout untouched until the P7 gate. All selection on rolling-origin CV.</td>
+          </tr>
+          <tr>
+            <td>Training runtime blows the schedule</td>
+            <td><span class="tag">medium</span></td>
+            <td>Pilot measures per-store runtime and extrapolates before committing. Fallbacks: reduced history window, store&times;category partitions, fewer boosting rounds.</td>
+          </tr>
+          <tr>
+            <td>Christmas / closure zeros modeled as demand</td>
+            <td><span class="tag">medium</span></td>
+            <td>Identified in P1, flagged as a feature, handling policy recorded.</td>
+          </tr>
+          <tr>
+            <td>New items with no usable history</td>
+            <td><span class="tag">medium</span></td>
+            <td>Global models handle these via item/dept/category structure &mdash; a genuine advantage over per-series fitting. Verified in the P7 segment breakdown.</td>
+          </tr>
+          <tr>
+            <td>Logic drift between notebooks</td>
+            <td><span class="tag">medium</span></td>
+            <td>Metric and feature code live in thin <span class="m">src/</span> modules the notebooks import (see §3).</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <div class="rule"></div>
+  <section id="open">
+    <div class="sec-head">
+      <span class="code">§6</span>
+      <h2>Open for your call</h2>
+    </div>
+    <ol>
+      <li><strong>The <span class="m">src/</span> compromise in §3</strong> &mdash; two thin modules for metrics and features, or strictly notebooks-only and we accept the duplication risk?</li>
+      <li><strong>Outlier policy</strong> &mdash; decided in P2 on evidence, but flagging now that it is a real judgement call: promotional spikes are signal, and clipping them will improve RMSSE while making the forecast less useful.</li>
+      <li><strong>Prediction intervals</strong> &mdash; the plan targets point forecasts only. M5 had a companion Uncertainty track using pinball loss across nine quantiles; LightGBM can produce these with quantile objectives at roughly 9&times; the training cost. Out of scope unless you want it.</li>
+      <li><strong>Phase granularity for PRs</strong> &mdash; one PR per phase as written, or bundle P0&ndash;P1 and P3&ndash;P4 into two larger reviews?</li>
+    </ol>
+  </section>
+
+  <div class="foot">
+    Prepared against the repository at <span class="m">main</span> &middot; 2026-08-08<br>
+    Data verified in place: 30,490 series &times; 1,941 days, 1,969 calendar rows, 60,980 submission rows.<br>
+    Target machine: 8 logical cores, 15.9 GB RAM, no CUDA GPU, Python 3.11.
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var cv = document.getElementById('panel');
+  if (!cv) return;
+  var ctx = cv.getContext('2d');
+
+  var COLS = 200, ROWS = 34;
+  var TRAIN = 144, HOLD = 28;
+
+  // Deterministic PRNG so the panel is stable across redraws.
+  function lcg(seed) {
+    return function () {
+      seed = (seed * 1664525 + 1013904223) % 4294967296;
+      return seed / 4294967296;
+    };
+  }
+
+  // Per-series intensity: a few dense sellers, a long tail of sparse ones,
+  // mirroring the real ~68% zero rate.
+  var rnd = lcg(20160522);
+  var series = [];
+  for (var r = 0; r < ROWS; r++) {
+    var u = rnd();
+    series.push({ p: 0.04 + Math.pow(u, 2.1) * 0.88, w: 0.55 + rnd() * 0.9 });
+  }
+  var grid = [];
+  for (var r2 = 0; r2 < ROWS; r2++) {
+    var row = [];
+    for (var c = 0; c < COLS; c++) {
+      // Mild weekly rhythm on top of the base rate.
+      var wk = 1 + 0.35 * Math.sin((c / 7) * Math.PI * 2) * series[r2].w;
+      row.push(rnd() < series[r2].p * wk ? 0.45 + rnd() * 0.55 : 0);
+    }
+    grid.push(row);
+  }
+
+  function draw() {
+    var css = getComputedStyle(document.documentElement);
+    var inkMark = css.getPropertyValue('--muted').trim();
+    var accent  = css.getPropertyValue('--accent').trim();
+    var signal  = css.getPropertyValue('--signal').trim();
+    var soft    = css.getPropertyValue('--rule-soft').trim();
+
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth, h = cv.clientHeight;
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    var gap = 3;
+    var usable = w - gap * 2;
+    var cw = usable / COLS;
+    var ch = h / ROWS;
+    var mw = Math.max(1, cw - 0.6);
+    var mh = Math.max(1, ch - 0.9);
+
+    function xOf(c) {
+      var off = 0;
+      if (c >= TRAIN) off += gap;
+      if (c >= TRAIN + HOLD) off += gap;
+      return c * cw + off;
+    }
+
+    // Empty-cell ground for the forecast block: the point is that it is unknown.
+    ctx.fillStyle = soft;
+    for (var c0 = TRAIN + HOLD; c0 < COLS; c0++) {
+      for (var r0 = 0; r0 < ROWS; r0++) {
+        ctx.fillRect(xOf(c0), r0 * ch, mw, mh);
+      }
+    }
+
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        var v = grid[r][c];
+        if (!v) continue;
+        if (c >= TRAIN + HOLD) continue;          // forecast zone stays blank
+        ctx.fillStyle = c < TRAIN ? inkMark : accent;
+        ctx.globalAlpha = c < TRAIN ? 0.22 + v * 0.5 : 0.4 + v * 0.6;
+        ctx.fillRect(xOf(c), r * ch, mw, mh);
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // Leading break marker: the panel continues back to d_1.
+    ctx.fillStyle = inkMark;
+    ctx.globalAlpha = 0.5;
+    ctx.font = '11px ui-monospace, Consolas, monospace';
+    ctx.fillText('«', 1, h - 2);
+    ctx.globalAlpha = 1;
+
+    // Forecast-zone bracket.
+    ctx.strokeStyle = signal;
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 1;
+    var fx = xOf(TRAIN + HOLD) - 1.5;
+    ctx.strokeRect(fx, 0.5, w - fx - 0.5, h - 1);
+    ctx.globalAlpha = 1;
+  }
+
+  draw();
+  var t;
+  window.addEventListener('resize', function () {
+    clearTimeout(t);
+    t = setTimeout(draw, 120);
+  });
+  if (window.matchMedia) {
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq.addEventListener) mq.addEventListener('change', draw);
+  }
+  new MutationObserver(draw).observe(document.documentElement, {
+    attributes: true, attributeFilter: ['data-theme']
+  });
+})();
+</script>
+</body>
+</html>

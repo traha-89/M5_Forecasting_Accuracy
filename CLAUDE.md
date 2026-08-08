@@ -39,10 +39,46 @@ Series are keyed by `id` (`item_id_store_id`), spanning 10 stores (`CA_1..4`, `T
 To combine sources: melt the wide sales files to long format (`id`, `d`, `sales`), then join
 `calendar.csv` on `d` and `sell_prices.csv` on `store_id`/`item_id`/`wm_yr_wk`.
 
+## Project plan
+
+The work is planned as nine phases (P0–P8) in `docs/plan/`. **When working a single phase, read only
+that phase's brief** (`docs/plan/P<n>-*.md`) — each is self-contained and states its inputs, steps,
+and gate. Reading the whole plan to build one phase wastes context and is not required.
+`docs/plan/README.md` is the index; `docs/plan/plan.html` is the narrative version for humans.
+
+Record what was decided at each gate, and the number that justified it, in `docs/plan/DECISIONS.md`.
+
+**If a gate fails, stop and report — do not proceed to the next phase.** One phase, one notebook, one
+PR; don't start the next phase in the same session. Every artifact that crosses a phase boundary has
+a pinned path and schema in the data contract in `docs/plan/README.md` — load those by name rather
+than inventing paths.
+
+### Forecast horizons
+
+`sales_train_evaluation.csv` covers `d_1`–`d_1941`; `calendar.csv` runs to `d_1969`.
+
+- **Training** `d_1`–`d_1913` — fit and cross-validate here.
+- **Holdout** `d_1914`–`d_1941` — actuals *are* present in the CSV. The honest test set.
+- **Forecast** `d_1942`–`d_1969` — no actuals. The final deliverable.
+
+### Non-negotiable invariants
+
+1. **Never train, tune, or select on `d_1914`–`d_1941`.** All selection happens on rolling-origin
+   folds ending at `d_1913` or earlier. The holdout is scored once, at the P7 gate. The actuals sit in
+   the same file we train from, so this is easy to violate by accident and silently invalidates every
+   reported number.
+2. **Every lag and rolling window is anchored at lag ≥ 28.** We predict 28 days in one shot, so
+   shorter lags are unavailable at prediction time.
+3. **Per-store partitions only.** Never materialise all 10 stores of engineered features in one frame
+   (~14 GB against 15.9 GB of RAM). Sales `int16`, engineered features `float32`, ids `category`.
+4. **Target encodings and aggregate statistics are fit on training folds only.**
+5. **No random train/test splits** — time series split chronologically, always.
+
 ## Workflow
 
 All changes go through a pull request — do not push directly to `main`. Use the PR template at
-`.github/PULL_REQUEST_TEMPLATE.md` (type of change, changes, test plan).
+`.github/PULL_REQUEST_TEMPLATE.md` (type of change, changes, test plan). One phase, one notebook,
+one PR.
 
 ## Claude Code skills
 
