@@ -15,11 +15,11 @@ Review every open pull request on this repository and report a concise summary o
 Check the GitHub CLI is available and authenticated before doing anything else:
 
 ```
-gh auth status
+!`gh auth status`
 ```
 
-If `gh` is missing or not authenticated, stop and tell the user how to fix it
-(`winget install GitHub.cli` on Windows, then `gh auth login`) rather than guessing.
+If the output above shows `gh` is missing or not authenticated, stop and tell the user how to fix
+it (`winget install GitHub.cli` on Windows, then `gh auth login`) rather than guessing.
 
 ## Steps
 
@@ -33,8 +33,8 @@ If `gh` is missing or not authenticated, stop and tell the user how to fix it
 
 2. **For each open PR, gather full context:**
 
-   - Description/metadata: !`gh pr view <number> --json body,additions,deletions,changedFiles,files,comments,reviews,statusCheckRollup`
-   - Full diff: !`gh pr diff <number>`
+   - Description/metadata: `gh pr view <number> --json body,additions,deletions,changedFiles,files,comments,reviews,statusCheckRollup`
+   - Full diff: `gh pr diff <number>`
 
    Fetch every PR before writing any summaries, so the report covers all of them consistently.
 
