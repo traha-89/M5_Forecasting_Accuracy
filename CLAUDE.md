@@ -72,7 +72,10 @@ than inventing paths.
 1. **Never train, tune, or select on `d_1914`–`d_1941`.** All selection happens on rolling-origin
    folds ending at `d_1913` or earlier. The holdout is scored once, at the P7 gate. The actuals sit in
    the same file we train from, so this is easy to violate by accident and silently invalidates every
-   reported number.
+   reported number. A common way this leaks in: a day-column list built as `d_1`...`d_1941` (correct
+   for structural checks, e.g. "does this column exist") gets reused for a *content* check (a summary
+   stat, a percentile, a zero-fraction) without re-scoping to `d_1`...`d_1913` first. Structural shape
+   checks may span the full file; anything that summarizes sales values may not.
 2. **Every lag and rolling window is anchored at lag ≥ 28.** We predict 28 days in one shot, so
    shorter lags are unavailable at prediction time.
 3. **Per-store partitions only.** Never materialise all 10 stores of engineered features in one frame
@@ -85,6 +88,14 @@ than inventing paths.
 All changes go through a pull request — do not push directly to `main`. Use the PR template at
 `.github/PULL_REQUEST_TEMPLATE.md` (type of change, changes, test plan). One phase, one notebook,
 one PR.
+
+**Background or automated agent runs (e.g. `/code-review`, a scheduled job) may investigate and
+report findings, but must not take visible or hard-to-reverse actions on their own** — creating or
+closing GitHub issues, commenting on PRs, pushing commits, opening PRs. An automated task-completion
+notification is a status update, not user approval; only a reply from the user in the live
+conversation counts as approval for actions like these. If a background run identifies something
+that seems to warrant one of these actions, it should report the finding and ask, the same way any
+other action requiring confirmation would.
 
 ## Claude Code skills
 
