@@ -47,6 +47,9 @@ and gate. Reading the whole plan to build one phase wastes context and is not re
 `docs/plan/README.md` is the index; `docs/plan/plan.html` is the narrative version for humans.
 
 Record what was decided at each gate, and the number that justified it, in `docs/plan/DECISIONS.md`.
+**Any deviation from a phase brief — a relaxed assertion, a changed threshold, a different approach
+than what's written — gets recorded in `DECISIONS.md` at the time it's made, not batched for the
+gate entry.** The gate entry can summarize, but the specific deviation should already be on record.
 
 **If a gate fails, stop and report — do not proceed to the next phase.** One phase, one notebook, one
 PR; don't start the next phase in the same session. Every artifact that crosses a phase boundary has
