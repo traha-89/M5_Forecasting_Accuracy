@@ -90,13 +90,16 @@ Likely friction points on this stack, worth surfacing now rather than in P6:
 
 ## Gate
 
-- [ ] `import lightgbm, xgboost, statsforecast, pyarrow` succeeds
-- [ ] `pytest --version` succeeds
-- [ ] Kernel `M5` appears in `jupyter kernelspec list`
-- [ ] `from src import …` works from a notebook in `notebooks/` (test with a stub)
-- [ ] Directory skeleton committed (with `.gitkeep` files where needed)
-- [ ] `models/` added to `.gitignore`
-- [ ] Installed versions and the chosen import convention recorded in `docs/plan/DECISIONS.md`
+- [x] `import lightgbm, xgboost, statsforecast, pyarrow` succeeds
+- [x] `pytest --version` succeeds
+- [x] Kernel `M5` appears in `jupyter kernelspec list`
+- [x] `from src import …` works from a notebook in `notebooks/` (test with a stub)
+- [x] Directory skeleton committed (with `.gitkeep` files where needed)
+- [x] `models/` added to `.gitignore`
+- [x] Installed versions and the chosen import convention recorded in `docs/plan/DECISIONS.md`
+
+Passed 2026-08-09 (PR #7). See `docs/plan/DECISIONS.md` (`## P0 — Environment & scaffolding`) for
+the recorded evidence.
 
 ## Invariants
 
