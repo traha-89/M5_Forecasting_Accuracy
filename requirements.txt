@@ -2,3 +2,12 @@ numpy
 pandas
 matplotlib
 seaborn
+pyarrow
+lightgbm
+xgboost
+statsforecast
+scikit-learn
+jupyterlab
+ipykernel
+tqdm
+pytest
