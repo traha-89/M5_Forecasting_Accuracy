@@ -53,4 +53,20 @@ Made when the plan was drafted, before any code.
 
 ---
 
+## P0 — Environment & scaffolding            (2026-08-09)
+
+- **Decision:** `src/` import convention is an editable install (`pip install -e .`) backed by a
+  minimal `pyproject.toml` declaring `src` as a package, not a per-notebook `sys.path` shim.
+  **Evidence:** `import src` resolves correctly to `src/__init__.py` when run with `notebooks/` as
+  the working directory, confirmed via `cd notebooks && python -c "import src; print(src.__file__)"`.
+- **Decision:** directory skeleton (`notebooks/`, `src/`, `tests/`, `reports/figures/`, and gitignored
+  `models/`, `data/interim/`, `data/processed/`) created as specified in P0-setup.md.
+  **Evidence:** all four model libraries import cleanly, `pytest --version` succeeds, `M5` kernel
+  registered in `jupyter kernelspec list`, `from src import …` verified from `notebooks/`.
+- **Installed versions:** lightgbm 4.7.0, xgboost 3.2.0, statsforecast 2.1.1, pyarrow 25.0.0,
+  scikit-learn 1.9.0, pandas 2.3.3, numpy 2.4.6. No source builds required — all installed from
+  wheels on Windows/Python 3.11.
+- **Note:** installing `statsforecast` downgraded `pandas` from 3.0.5 to 2.3.3 to satisfy its pin.
+  No other packages in this repo depend on pandas 3.x features, so left as resolved by pip.
+
 <!-- Append phase entries below as gates are passed. -->
