@@ -69,4 +69,34 @@ Made when the plan was drafted, before any code.
 - **Note:** installing `statsforecast` downgraded `pandas` from 3.0.5 to 2.3.3 to satisfy its pin.
   No other packages in this repo depend on pandas 3.x features, so left as resolved by pip.
 
+## P1 — Load & hygiene check            (2026-08-09)
+
+- **Decision:** relax the Christmas-closure check from a hard "zero sales on 25 Dec, every series"
+  assertion to a bounded tolerance (fail if non-zero cells exceed 0.1% of the 5 × 30,490 checked).
+  **Evidence:** 2011–2015 each show 8–17 non-zero rows (all small counts, 1–6 units, all
+  `FOODS_3_*` items, scattered across CA/TX/WI stores) — 60 non-zero cells out of 152,450 checked,
+  0.039% overall. A known minor M5 data quirk, not a loading/dtype bug: confirmed by inspecting the
+  offending rows directly (`notebooks/01_data_hygiene.ipynb`, Christmas closures cell). The 5 dates
+  are marked as closures regardless so they aren't modelled as demand collapse; the tolerance only
+  changes whether the *assertion* hard-fails, not how the dates are treated downstream.
+- **Note:** P1-hygiene.md's own two stated expectations for the pre-release cut are mutually
+  inconsistent — "~12-13%" dropped implies a post-cut count of ~51.5M (59,181,090 × 0.87), but the
+  same brief also states "roughly 46-47M rows" post-cut, which implies ~21-22% dropped. The actual
+  run drops 12,299,413 of 59,181,090 rows (20.78%), landing at 46,881,677 rows — matching the row-
+  count target exactly, not the percentage prose. Verified the drop is entirely explained by the
+  per-series leading (pre-release) gap, with zero trailing/post-delisting gap, so this is a
+  documentation inconsistency in the brief, not a bug in the melt/join/drop logic.
+- **Decision:** `data/processed/sales_long.parquet` written — 46,881,677 rows, 227.7 MB, 22 columns.
+  Schema matches the `docs/plan/README.md` data contract exactly (`id`/`item_id`/`dept_id`/`cat_id`/
+  `store_id`/`state_id`/`weekday`/`event_name_1`/`event_type_1`/`event_name_2`/`event_type_2`
+  `category`; `d`/`sales`/`wm_yr_wk`/`year` `int16`; `wday`/`month`/`snap_CA`/`snap_TX`/`snap_WI`
+  `int8`; `date` `datetime64[ns]`; `sell_price` `float32`, no nulls post-cut).
+  **Evidence:** full melt asserted at 59,181,090 rows exactly (30,490 × 1,941); post-join row count
+  unchanged (both joins 1:1); post-cut count asserted in [45M, 48M]; per-column dtype assertions all
+  pass. `notebooks/01_data_hygiene.ipynb`, Output section.
+- **Dead series:** 955 of 30,490 (3.1%) have zero sales in the final 60 training days (`d_1854`-
+  `d_1913`, deliberately not the file's literal last 60 columns, which would reach into the
+  `d_1914`-`d_1941` holdout — see invariant 1). Handling decision deferred to P7 per the brief.
+- **Sparsity:** 68.0% overall zero fraction, matching the brief's ~68% expectation.
+
 <!-- Append phase entries below as gates are passed. -->

@@ -65,10 +65,16 @@ Record the actual post-cut count in `DECISIONS.md`; later phases use it as a san
 
 ## Gate
 
-- [ ] All structural assertions pass
-- [ ] `data/processed/sales_long.parquet` written
-- [ ] Row count, dtypes, and file size recorded in `DECISIONS.md`
-- [ ] Christmas closure dates and dead-series count recorded
+- [x] All structural assertions pass
+- [x] `data/processed/sales_long.parquet` written
+- [x] Row count, dtypes, and file size recorded in `DECISIONS.md`
+- [x] Christmas closure dates and dead-series count recorded
+
+Passed 2026-08-09. See `docs/plan/DECISIONS.md` (`## P1 — Load & hygiene check`) for the recorded
+evidence, including two deviations from this brief's stated expectations: the Christmas-closure
+check uses a 0.1% tolerance instead of a hard zero, and the actual pre-release drop is ~20.8% (not
+this brief's "~12-13%" estimate) — the drop matches the brief's own "~46-47M rows post-cut" target
+exactly, so the "~12-13%" figure above is a documentation error, not a pipeline defect.
 
 ## Invariants
 
