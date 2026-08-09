@@ -98,5 +98,15 @@ Made when the plan was drafted, before any code.
   `d_1913`, deliberately not the file's literal last 60 columns, which would reach into the
   `d_1914`-`d_1941` holdout — see invariant 1). Handling decision deferred to P7 per the brief.
 - **Sparsity:** 68.0% overall zero fraction, matching the brief's ~68% expectation.
+- **Known issues (not yet fixed):** a code review after the gate passed found that the reported
+  "no negative sales" max/percentile check and the sparsity-profile check (68.0% figure above) both
+  compute over `DAY_COLS = d_1`-`d_1941`, which includes the `d_1914`-`d_1941` holdout — an invariant
+  1 violation (contrast with the dead-series check two cells later, which correctly scopes to
+  `d_1854`-`d_1913`). Separately, the Output section's `d` column depends on a `d_num` column mutated
+  onto `calendar` inside the earlier price-coverage cell rather than computed locally, an implicit
+  cross-cell dependency. None of these affect `sales_long.parquet`'s written schema or row count, and
+  the gate above stands, but the two summary numbers should be treated as informational-only (not
+  clean invariant-1 evidence) until fixed. Tracked in issues #9, #10, #11 — deferred to a later
+  session, not blocking P2.
 
 <!-- Append phase entries below as gates are passed. -->
