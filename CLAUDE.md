@@ -30,7 +30,11 @@ tooling (e.g. pytest, a linter) at that point rather than assuming it exists.
   SNAP (food-stamp) eligibility flags per state.
 - `sales_train_validation.csv` / `sales_train_evaluation.csv` — daily unit sales in **wide**
   format (`id`, `item_id`, `dept_id`, `cat_id`, `store_id`, `state_id`, then one column per day
-  `d_1`...`d_n`). The evaluation file extends 28 days further than validation.
+  `d_1`...`d_n`). Both are the same series; `_validation` was Kaggle's original release covering
+  only `d_1`–`d_1913` (before the holdout was scored), `_evaluation` is the later release that
+  extends it 28 days further to `d_1941`. `_validation` carries no information the evaluation
+  file doesn't already have, so we only load it once, in P1, to assert the two agree on their
+  overlapping days — then work exclusively from `_evaluation`.
 - `sell_prices.csv` — weekly price per `store_id` / `item_id` / `wm_yr_wk`.
 - `sample_submission.csv` — submission template: `id` + 28 forecast columns `F1`-`F28`.
 
@@ -66,6 +70,9 @@ than inventing paths.
 - **Training** `d_1`–`d_1913` — fit and cross-validate here.
 - **Holdout** `d_1914`–`d_1941` — actuals *are* present in the CSV. The honest test set.
 - **Forecast** `d_1942`–`d_1969` — no actuals. The final deliverable.
+
+`d_1913` isn't a train/test ratio — it's `d_1941 − 28`, matching the 28-day forecast horizon so the
+holdout is the same shape as the real deliverable and lands on a week boundary.
 
 ### Non-negotiable invariants
 

@@ -39,6 +39,14 @@ Made when the plan was drafted, before any code.
   causes silent drift between the pilot and the full run.
 - **Excluded metrics:** sMAPE and MAPE. **Rationale:** both divide by actuals; ~68% of this dataset is
   zero, so they are undefined or explosive.
+- **Note on the `~68%` zero-rate figure** (used here and in `P1-hygiene.md`'s sparsity check,
+  `P3-metrics.md`, `P6-pilot.md`, `plan.html`): stated as a planning-time expectation, not derived
+  from an in-repo EDA — there is no notebook or commit predating the plan (`f4ca976`) that computed
+  it from `data/`. It reflects the zero-rate commonly cited in published M5 competition analysis for
+  this dataset's item×store×day granularity, carried in as a prior to validate against. P1
+  independently measured 68.0% from the actual data (`DECISIONS.md`, P1 entry) and confirmed it, so
+  the prior held — but treat the *planning-time* figure as an unverified external citation, not a
+  locally-derived one, if it's ever relied on before P1 has run.
 
 ### Still open
 
@@ -108,5 +116,18 @@ Made when the plan was drafted, before any code.
   the gate above stands, but the two summary numbers should be treated as informational-only (not
   clean invariant-1 evidence) until fixed. Tracked in issues #9, #10, #11 — deferred to a later
   session, not blocking P2.
+- **Strengthened post-gate (2026-08-10):** the price-coverage cell asserted "missing `sell_prices`
+  row = pre-release" without checking for mid-life gaps (stockout, delisting), which would look
+  identical to pre-release under the original leading-gap-only logic and get silently mis-dropped
+  as a structural zero. Added an explicit check: for all 30,490 `(item_id, store_id)` combos with
+  price data, coverage is one contiguous `wm_yr_wk` run from release week through the final
+  calendar week — 0 interior gaps, 0 combos stopping early. Confirms the leading-gap cut is safe
+  for this dataset; not a general guarantee for other data. Also added: `wm_yr_wk` truncated-week
+  check now asserts any `<7`-day group falls only at the calendar's first/last week (previously
+  `between(1, 7)` alone would have passed a truncated week anywhere); and an explicit full-
+  cross-product check (every item present in every store exactly once), which was already implied
+  by existing id-uniqueness + cardinality assertions but is now checked directly rather than left
+  as an unstated consequence. `notebooks/01_data_hygiene.ipynb`, re-run clean end-to-end after each
+  change.
 
 <!-- Append phase entries below as gates are passed. -->

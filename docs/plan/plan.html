@@ -437,6 +437,15 @@
       </table>
     </div>
 
+    <p>
+      <span class="m">d_1913</span> isn't a train/test ratio &mdash; it's <span class="m">d_1941 &minus; 28</span>. Both the
+      holdout and forecast blocks are exactly 28 days because that's the real forecast horizon: the
+      holdout has to be the same shape as the actual deliverable, one step earlier in time, and 28 days
+      is also a clean four calendar weeks so the cut doesn't land mid-week and bias the metric toward
+      whichever weekdays got over- or under-represented. <span class="m">d_1914</span>&ndash;<span class="m">d_1941</span>
+      also happens to match Kaggle's original public-leaderboard window.
+    </p>
+
     <div class="callout key">
       <h4>The discipline rule</h4>
       <p>
@@ -619,7 +628,7 @@
     <h4>Content checks</h4>
     <ul>
       <li><strong>Negative or implausible sales</strong> &mdash; expect none; flag loudly if present.</li>
-      <li><strong>Price coverage.</strong> A missing <span class="m">sell_prices</span> row means the item was not on sale in that store that week &mdash; almost always pre-release. Quantify the leading gap per series; this becomes the release date and lets us drop roughly 12&ndash;13% of rows that are structural zeros, not demand signal.</li>
+      <li><strong>Price coverage.</strong> A missing <span class="m">sell_prices</span> row means the item was not on sale in that store that week &mdash; could be pre-release or a mid-life gap (stockout, delisting), so don't assume without checking. <span class="m">sell_prices</span> is a weekly catalog/price table, not inventory, so a stockout shows as <span class="m">sales == 0</span> with the price row intact, not a missing row; still, confirm coverage is one contiguous run per series (release week through the final calendar week) before treating a gap as pre-release. Quantify the leading gap per series; this becomes the release date and lets us drop roughly 12&ndash;13% of rows that are structural zeros, not demand signal.</li>
       <li><strong>Christmas closures.</strong> Stores close 25 Dec; every series should read zero on those five dates. Confirm, and mark them so they don't get modeled as demand collapse.</li>
       <li><strong>Sparsity profile</strong> &mdash; zero fraction overall and by category, store, department.</li>
       <li><strong>Dead series</strong> &mdash; items with no sales in the final 60 days, which need a decision (forecast zero, or let the model decide).</li>
