@@ -24,6 +24,10 @@ These underpin everything. `sales_train_evaluation.csv` carries `d_1`–`d_1941`
 The holdout actuals sit in the same CSV we train from, so peeking is trivially easy and silently
 invalidates every reported number. See the invariants below.
 
+**Why `d_1913`:** not a train/test ratio — `d_1941 − 28` and `d_1969 − 28 = d_1941`. Both blocks are
+28 days (4 weeks) to match the real forecast horizon and avoid weekday/SNAP-cycle bias from an
+off-week-boundary cut. `d_1914`–`d_1941` also matches Kaggle's original public-LB window.
+
 `sample_submission.csv` has 60,980 rows: 30,490 `_validation` ids wanting `d_1914`–`d_1941`, then
 30,490 `_evaluation` ids wanting `d_1942`–`d_1969`.
 

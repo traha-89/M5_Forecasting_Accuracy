@@ -41,11 +41,18 @@ Assert, don't eyeball — these should fail loudly if the data is not what we ex
 
 - **Negative or implausible sales** — expect none. Flag loudly if present.
 - **Price coverage.** A missing `sell_prices` row means the item was not on sale in that store that
-  week — almost always pre-release. Quantify the leading gap per series; this defines the release date
-  and lets us drop ~12–13% of rows that are structural zeros, not demand signal.
+  week. This could in principle be pre-release *or* a mid-life gap (stockout, delisting) — don't
+  assume it's pre-release without checking. `sell_prices` is a weekly catalog/price table, not
+  inventory, so a stockout would show `sales == 0` with the price row still present, not a missing
+  row; but confirm coverage is one contiguous run per series (release week through the final
+  calendar week, no interior gap, no early stop) before treating any gap as pre-release. Quantify
+  the leading gap per series; this defines the release date and lets us drop ~12–13% of rows that
+  are structural zeros, not demand signal.
 - **Christmas closures.** Stores close 25 December; every series should read zero on those five dates
   (2011–2015). Confirm this, and mark the dates so they are not modelled as demand collapse.
-- **Sparsity profile** — zero fraction overall and by category, store, department. Expect ~68% overall.
+- **Sparsity profile** — zero fraction overall and by category, store, department. Expect ~68% overall
+  (an external planning-time prior, not derived from this repo's own data — see `DECISIONS.md`,
+  pre-P0 section, "Note on the `~68%` zero-rate figure").
 - **Dead series** — items with no sales in the final 60 days. Count them and record the number; the
   handling decision (forecast zero vs let the model decide) is made in P7, not here.
 - **Event columns** — nulls are meaningful ("no event"), not missing data. Do not fill them.
