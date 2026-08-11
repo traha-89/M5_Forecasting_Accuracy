@@ -129,5 +129,30 @@ Made when the plan was drafted, before any code.
   by existing id-uniqueness + cardinality assertions but is now checked directly rather than left
   as an unstated consequence. `notebooks/01_data_hygiene.ipynb`, re-run clean end-to-end after each
   change.
+- **Issue #9 fixed (2026-08-11):** the negative-sales check and the sparsity-profile check now
+  compute over a new `TRAIN_DAY_COLS = d_1`-`d_1913` list instead of the full-range `DAY_COLS`,
+  closing the invariant 1 violation recorded above. Re-running the notebook end-to-end shifted the
+  sparsity figure from 68.0% (full range) to **68.2%** (training range only) — the by-category/
+  store/department breakdowns shifted correspondingly by a few tenths of a point each; the
+  negative-sales max (763) and 99.9th percentile (47.0) were unchanged, since the holdout range
+  didn't contain a more extreme value. `sales_long.parquet`'s schema and row count are unaffected
+  (those are built from the full melt/join/drop pipeline, not from these two checks). Issue #10
+  (the `d_num` cross-cell dependency) was not removed — `d_num` is still mutated onto `calendar` in
+  the price-coverage cell and consumed later in the Output section's join — but it is now called
+  out explicitly in that join cell's comment rather than being an unstated dependency. Issue #11
+  not addressed in this pass. `notebooks/01_data_hygiene.ipynb`, cells `02121c63`, `96baedf7`,
+  `d84bd04b`, `7b77e394`, `97feb64d`.
+- **Issue #11 fixed (2026-08-11):** the Output section's `d` column no longer depends on the
+  `calendar["d_num"]` mutation made in the earlier price-coverage cell. Two changes: (1) the
+  price-coverage cell (`d08afdfd`) now computes a local `calendar_d_num` Series instead of
+  assigning `calendar["d_num"] = ...` — `calendar` itself is never mutated, so no later cell can
+  come to depend on this one having already run; (2) the Output join cell (`fc3a2b39`) computes
+  its own `d` column directly from `sales_long["d_label"]` (`str.replace("d_", "") .astype("int16")`)
+  instead of renaming a `d_num` column carried over from `calendar`. This closes issue #10's
+  cross-cell dependency as well as #11 — the two were describing the same underlying pattern from
+  different angles. Re-ran the notebook end-to-end: all outputs identical to the pre-fix run
+  (59,181,090-row melt, 12,299,413 pre-release rows dropped, 46,881,677-row / 227.7 MB parquet,
+  schema check OK, `d` still `int16`) — this was a pure refactor of *how* `d` gets computed, not a
+  change to its values. `notebooks/01_data_hygiene.ipynb`, cells `d08afdfd`, `fc3a2b39`.
 
 <!-- Append phase entries below as gates are passed. -->
