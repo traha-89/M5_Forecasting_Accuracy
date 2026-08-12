@@ -28,6 +28,11 @@ for f in "$plan_dir"/P[0-9]-*.md; do
   fi
 done
 
+next_phase_items=""
+if [ -n "$next_phase_file" ]; then
+  next_phase_items="$(grep -n '^\- \[[ x]\]' "$next_phase_file" | sed -E 's/^([0-9]+):- \[x\](.*)$/  done:    \2/; s/^([0-9]+):- \[ \](.*)$/  pending: \2/')"
+fi
+
 branch="$(git -C "$repo_root" branch --show-current 2>/dev/null || echo "unknown")"
 last_commit="$(git -C "$repo_root" log -1 --format='%h %s' 2>/dev/null || echo "none")"
 dirty="$(git -C "$repo_root" status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
@@ -43,6 +48,9 @@ fi
 if [ -n "$next_phase" ]; then
   echo "  Next up: $next_phase"
   echo "  Brief: docs/plan/$(basename "$next_phase_file")"
+  if [ -n "$next_phase_items" ]; then
+    echo "$next_phase_items"
+  fi
 else
   echo "  All phase gates in docs/plan checked off."
 fi
