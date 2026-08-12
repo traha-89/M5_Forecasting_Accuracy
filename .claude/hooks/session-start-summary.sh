@@ -37,20 +37,31 @@ branch="$(git -C "$repo_root" branch --show-current 2>/dev/null || echo "unknown
 last_commit="$(git -C "$repo_root" log -1 --format='%h %s' 2>/dev/null || echo "none")"
 dirty="$(git -C "$repo_root" status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
 
-echo "M5 Forecasting Accuracy - project status"
-echo "  Branch: $branch (last commit: $last_commit)"
+summary="M5 Forecasting Accuracy - project status"
+summary="$summary
+  Branch: $branch (last commit: $last_commit)"
 if [ "$dirty" -gt 0 ]; then
-  echo "  Uncommitted/untracked changes: $dirty file(s)"
+  summary="$summary
+  Uncommitted/untracked changes: $dirty file(s)"
 fi
 if [ -n "$last_done_phase" ]; then
-  echo "  Last completed gate: $last_done_phase"
+  summary="$summary
+  Last completed gate: $last_done_phase"
 fi
 if [ -n "$next_phase" ]; then
-  echo "  Next up: $next_phase"
-  echo "  Brief: docs/plan/$(basename "$next_phase_file")"
+  summary="$summary
+  Next up: $next_phase
+  Brief: docs/plan/$(basename "$next_phase_file")"
   if [ -n "$next_phase_items" ]; then
-    echo "$next_phase_items"
+    summary="$summary
+$next_phase_items"
   fi
 else
-  echo "  All phase gates in docs/plan checked off."
+  summary="$summary
+  All phase gates in docs/plan checked off."
 fi
+
+jq -n --arg msg "$summary" '{
+  systemMessage: $msg,
+  hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: $msg }
+}'
