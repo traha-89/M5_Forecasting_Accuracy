@@ -27,7 +27,9 @@ tooling (e.g. pytest, a linter) at that point rather than assuming it exists.
 `data/` holds the raw M5 dataset and is gitignored (~440 MB total, not committed):
 
 - `calendar.csv` — one row per date; weekday/month/year, holiday/event names & types, and
-  SNAP (food-stamp) eligibility flags per state.
+  SNAP (food-stamp) eligibility flags per state — `snap_CA`/`snap_TX`/`snap_WI` are binary, 1
+  meaning stores in that state allow SNAP purchases that date. Definition per the competition's
+  own data dictionary: `docs/reference/M5-Competitors-Guide.pdf`, p.5.
 - `sales_train_validation.csv` / `sales_train_evaluation.csv` — daily unit sales in **wide**
   format (`id`, `item_id`, `dept_id`, `cat_id`, `store_id`, `state_id`, then one column per day
   `d_1`...`d_n`). Both are the same series; `_validation` was Kaggle's original release covering
