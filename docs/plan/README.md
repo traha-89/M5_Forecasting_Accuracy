@@ -74,6 +74,8 @@ phases listed. Do not deviate from these paths — later phases load them by nam
 | `models/full/<model>_<store>.<ext>` | P7 | P8 | Ten models per configuration, persisted per store so a failure at store 8 doesn't lose 1–7 |
 | `reports/full_scores.csv` | P7 | P8 | Same schema as `pilot_scores.csv`, plus `store_id` |
 | `submission.csv` | P8 | — | 60,980 rows, `id` + `F1`–`F28` |
+| `src/replenishment.py` | P9 (proposed) | — | Policy function(s) — (R,s,Q) reorder point + naive `(s,S)` baseline, same single-definition convention as `src/metrics.py`/`src/features.py` |
+| `reports/replenishment_comparison.csv` | P9 (proposed) | — | `id`, `policy` (`rsq`/`naive`), `fold`, `stockout_rate`, `excess_stock`, `reorder_point` |
 
 `data/` and `models/` are gitignored — these are build products, not committed artifacts.
 `reports/*.csv` are small and **are** committed, so results survive between sessions.
@@ -101,6 +103,16 @@ Fold definitions, used identically by P4, P6, and P7:
 | P8 | [Final forecast](P8-forecast.md) | `08_final_forecast.ipynb` + submission | 60,980 rows, non-negative, plausible |
 
 Phases run in order; each assumes its predecessors passed their gates.
+
+### Proposed (not yet approved)
+
+| Phase | Brief | Output | Gate |
+|---|---|---|---|
+| P9 | [Replenishment policy](P9-replenishment.md) | `09_replenishment.ipynb` | Beats naive baseline on folds 1–3 |
+
+Parked for future review, not part of the committed P0–P8 sequence above — see the brief for the
+open dependency (P6/P7 produce point forecasts only; P9 needs a demand distribution) that must be
+resolved before it can start.
 
 ## Recording decisions
 
