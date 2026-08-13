@@ -155,4 +155,12 @@ Made when the plan was drafted, before any code.
   schema check OK, `d` still `int16`) — this was a pure refactor of *how* `d` gets computed, not a
   change to its values. `notebooks/01_data_hygiene.ipynb`, cells `d08afdfd`, `fc3a2b39`.
 
+## P2 — Exploratory analysis (in progress)
+
+- **Deviation (2026-08-12):** `docs/reference/M5-Competitors-Guide.pdf` committed in PR #20
+  alongside the in-progress EDA work, rather than held back until the P2 gate passes as originally
+  decided. **Rationale:** user explicitly requested it be added to this PR now; no functional
+  reason to keep withholding it once the branch/PR already exist and cite it. Gate itself is
+  unaffected — still requires the four checklist items in `P2-eda.md` before merge.
+
 <!-- Append phase entries below as gates are passed. -->
