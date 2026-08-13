@@ -15,12 +15,15 @@ python -m venv venv
 source venv/bin/activate && pip install -r requirements.txt    # Unix
 ```
 
-`requirements.txt` is kept minimal (numpy, pandas, matplotlib, seaborn) — add packages there
-only as the work actually needs them (e.g. a model library once modeling starts).
+`requirements.txt` grows as each phase actually needs a package (e.g. `statsmodels` was added in
+P2 for MSTL decomposition) — add packages there only as the work needs them, not speculatively.
+Currently: numpy, pandas, matplotlib, seaborn, pyarrow, lightgbm, xgboost, statsforecast,
+statsmodels, scikit-learn, jupyterlab, ipykernel, tqdm, pytest.
 
-There is no build, lint, or test tooling in this repo yet — it currently contains only the raw
-dataset and project scaffolding. If you add scripts/notebooks, prefer adding the standard
-tooling (e.g. pytest, a linter) at that point rather than assuming it exists.
+`src/` is an editable install (`pip install -e .`, per `pyproject.toml`) so notebooks can
+`import src` without a per-notebook `sys.path` shim. `pytest` and a `tests/` package exist
+(P0 scaffolding) but no tests have been written yet — `src/metrics.py` (P3) and `src/features.py`
+(P5) are the modules expected to need them first. There is no lint tooling configured yet.
 
 ## Data
 
