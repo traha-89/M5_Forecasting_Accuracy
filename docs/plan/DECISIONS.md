@@ -52,6 +52,7 @@ Made when the plan was drafted, before any code.
 
 - **Outlier policy** — decided in P2 on evidence. Note the tension: clipping promotional spikes will
   improve RMSSE while making the forecast less useful operationally.
+  **Resolved 2026-08-13** — see the "P2 — Exploratory analysis" section below: no clipping.
 - **Prediction intervals** — out of scope. M5 had a companion Uncertainty track using pinball loss
   across nine quantiles; LightGBM can produce these with quantile objectives at ~9× training cost.
 - **Horizon strategy** — single non-recursive model with lag ≥28 is the plan; the 4×7-day block
