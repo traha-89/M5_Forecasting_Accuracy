@@ -16,6 +16,15 @@ change the P5 feature list has failed this phase.
 
 ## Analyses
 
+- [x] Trend and level
+- [x] Seasonality
+- [x] SNAP
+- [x] Events
+- [x] Price
+- [x] Intermittency
+- [x] Lifecycle
+- [x] Outliers
+
 **Trend and level.** Total units over time, then split by state, store, category, department. Ask
 whether apparent growth is real demand or assortment expansion (more items on sale) — these imply
 different features.
@@ -65,10 +74,13 @@ Target at least 10 rows. A "reject" verdict is a valid and useful outcome.
 
 ## Gate
 
-- [ ] Hypothesis table complete, ≥10 rows, each citing a figure
-- [ ] ADI/CV² quadrant labels persisted to `data/processed/series_segments.parquet`
-- [ ] Outlier handling policy decided and recorded in `DECISIONS.md`
-- [ ] Figures saved to `reports/figures/`
+- [x] Hypothesis table complete, ≥10 rows, each citing a figure
+- [x] ADI/CV² quadrant labels persisted to `data/processed/series_segments.parquet`
+- [x] Outlier handling policy decided and recorded in `DECISIONS.md`
+- [x] Figures saved to `reports/figures/`
+
+**Passed 2026-08-13** — see `DECISIONS.md` ("P2 — Exploratory analysis" section, outlier policy
+decision + hypothesis table entries).
 
 ## Invariants
 

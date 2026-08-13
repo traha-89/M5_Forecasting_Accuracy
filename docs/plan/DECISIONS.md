@@ -155,4 +155,53 @@ Made when the plan was drafted, before any code.
   schema check OK, `d` still `int16`) — this was a pure refactor of *how* `d` gets computed, not a
   change to its values. `notebooks/01_data_hygiene.ipynb`, cells `d08afdfd`, `fc3a2b39`.
 
+## P2 — Exploratory analysis            (2026-08-13)
+
+- **Deviation (2026-08-12):** `docs/reference/M5-Competitors-Guide.pdf` committed in PR #20
+  alongside the in-progress EDA work, rather than held back until the P2 gate passes as originally
+  decided. **Rationale:** user explicitly requested it be added to this PR now; no functional
+  reason to keep withholding it once the branch/PR already exist and cite it. Gate itself is
+  unaffected — still requires the four checklist items in `P2-eda.md` before merge.
+- **Decision (2026-08-13) — outlier handling policy:** do not clip or winsorize the training
+  target for extreme single-day spikes; carry them as-is into P5/P6.
+- **Evidence:** per-series IQR fence on non-zero sales days (`upper_fence = Q3 + 1.5*(Q3-Q1)`)
+  flags 1,008,763 spike-days (2.19% of rows; 99.4% of series have >=1). Magnitudes are almost all
+  mild — median 1.45x the fence, 75th pct 2x. Only 274 days (0.0006% of rows, 193/30,490 series,
+  0.63%) exceed 10x the fence, and the 10 most extreme are plausible large integer counts (e.g.
+  601 units on an item whose typical non-zero day is ~3-4), not fractional/negative values — P1's
+  hygiene checks already screened for those separately, so nothing here reads as a data error.
+  43.2% of spikes align with a known driver already built in this notebook (SNAP 378,445; event
+  76,817; price-drop 18,500 — SNAP dominates, consistent with the Price section's finding that
+  price cuts are rare); the remaining 56.8% are unexplained by those three signals but, given how
+  mild most magnitudes are, read as ordinary right-skewed demand variability rather than errors.
+  `notebooks/02_eda.ipynb`, Outliers section, figs `outliers_spike_drivers.png`,
+  `outliers_magnitude_distribution.png`.
+- **Rationale:** clipping would lower in-sample RMSSE (the brief's own explicit warning) while
+  discarding real demand signal the model needs to learn to predict occasional large days; the
+  extreme tail is both negligible in volume and plausible in magnitude, so there's no evidence of
+  measurement error to justify correcting values as opposed to genuine but rare demand. The
+  SNAP/event/price-drop features already built in Price/Events/SNAP give the model a route to
+  anticipate the explainable 43% of spikes; no additional feature is proposed for the unexplained
+  majority — if a specific series' RMSSE later turns out dominated by an unexplained spike, that's
+  a case for a per-series review at the modeling phase, not a blanket EDA-stage correction.
+- **Hypothesis table (2026-08-13)**, copied from `notebooks/02_eda.ipynb`'s Hypothesis table
+  section (14 rows, gate requires >=10):
+
+| # | Finding | Evidence | Proposed feature | Verdict |
+|---|---|---|---|---|
+| 1 | Raw trend (+81.3%) is mostly assortment growth (active series +152.9%); units per active series actually fell -36.7% | fig `trend_assortment.png` | Reject a raw-total trend/momentum feature; adopt one normalized against active-catalog size instead | reject (raw) / adopt (normalized) |
+| 2 | Weekend lift is real in every category but modest and fairly uniform (HOUSEHOLD +0.33, FOODS +0.28, HOBBIES +0.24 pct pts of trend) | fig `seasonality_dow_mstl.png` | Per-category day-of-week / weekend dummy | adopt |
+| 3 | Annual seasonal swing differs sharply by category: HOUSEHOLD (0.19 pct pts, Aug peak/Dec trough) is ~1.7x FOODS/HOBBIES (0.11) | fig `seasonality_month_mstl.png` | Per-category month-of-year / annual-harmonic feature, not pooled | adopt |
+| 4 | FOODS SNAP lift is state-specific and varies ~10x: WI +2.5, TX +2.0, CA +0.2 pct pts of trend | fig `snap_lift_by_state.png` | Per-state SNAP flag matched to series `state_id` (not a single pooled `is_snap_day`) | adopt |
+| 5 | Closure holidays (Christmas -11.9%, Thanksgiving -8.4%, Easter -8.4%) dip on the day with a lead-up lift beforehand (Thanksgiving +15.1%); open-store federal holidays (Labor Day +12.5%) lift instead | fig `events_headline_phases.png` | Per-`event_name` dummy plus explicit lead-up/hangover offset dummies for the closure-holiday group | adopt |
+| 6 | Pooling by `event_type` nearly cancels the signal (`National` mean ~+0.2%, mixing dipping and lifting holidays) | fig `events_by_type.png` | A single pooled `event_type` feature | reject |
+| 7 | Price changes are rare: median 0.7% of weeks change, 27.5% of series never change price, median gap ~91 weeks between changes | fig `price_change_frequency.png` | A price-change-recency / "still at original price" structural-break flag | adopt |
+| 8 | Sales response to a price change is noise-dominated at the pooled level (Spearman corr with normalized sales: raw price -0.028, relative-to-baseline price +0.024 - both near zero, one sign-flipped) | fig `price_change_sales_response.png` | A pooled cross-sectional price-elasticity coefficient | reject |
+| 9 | 91% of series fall in the sparse ADI/CV² quadrants (intermittent 72.7%, lumpy 18.4%); only 6.1% are smooth | fig `intermittency_adi_cv2_quadrants.png` | Segment label from `series_segments.parquet` used for model routing (esp. isolating the 18.4% lumpy group) | adopt |
+| 10 | Median series is zero-sales on 63.5% of days - mean/std-based statistics are unstable at this zero-inflation level | fig `intermittency_zero_fraction.png` | Any per-series scaling/normalization feature should use robust statistics (median/MAD or non-zero-conditional), not mean/std; favors a zero-inflated/Tweedie-style model objective | adopt |
+| 11 | 64.1% of series joined the panel after `d_1` (only 35.9% present at panel start), matching the assortment-growth finding at the item level | fig `lifecycle_release_dates.png` | `days_since_release` / `history_days` feature | adopt |
+| 12 | Only 0.6% of series (173) show a long dormant tail (>=180d trailing zero sales); no series ever drops out of the panel | fig `lifecycle_trailing_zero_run.png` | `days_since_last_sale` feature; a dedicated "discontinued series" model path | adopt (feature) / reject (dedicated path - group too small) |
+| 13 | 0 series have <28 days of history (lag-28 always computable); 1.36% have <365 days, affecting annual-seasonal feature reliability | fig `lifecycle_history_length.png` | `history_days` used to gate/down-weight annual-seasonality features for short-history series | adopt |
+| 14 | IQR-flagged spikes are common but almost all mild (median 1.45x fence); the extreme tail (>10x, 274 days / 0.0006% of rows) is plausible in magnitude, not a data-error signature; 43.2% of spikes align with an existing SNAP/event/price-drop flag | figs `outliers_spike_drivers.png`, `outliers_magnitude_distribution.png` | Clip/winsorize the training target for spikes | reject (see outlier policy above) |
+
 <!-- Append phase entries below as gates are passed. -->

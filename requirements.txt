@@ -6,6 +6,7 @@ pyarrow
 lightgbm
 xgboost
 statsforecast
+statsmodels
 scikit-learn
 jupyterlab
 ipykernel
