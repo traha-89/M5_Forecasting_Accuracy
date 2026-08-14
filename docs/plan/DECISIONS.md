@@ -155,6 +155,10 @@ Made when the plan was drafted, before any code.
   (59,181,090-row melt, 12,299,413 pre-release rows dropped, 46,881,677-row / 227.7 MB parquet,
   schema check OK, `d` still `int16`) — this was a pure refactor of *how* `d` gets computed, not a
   change to its values. `notebooks/01_data_hygiene.ipynb`, cells `d08afdfd`, `fc3a2b39`.
+- **Validation added (2026-08-14):** pre-release rows (missing `sell_price`) all have `sales == 0`.
+  Confirms that the leading-gap cut removes only structural zeros, not actual demand mismatches.
+  **Evidence:** all 12,299,413 pre-release rows verified to have sales = 0; assertion added to
+  the Output section. `notebooks/01_data_hygiene.ipynb`, cell `bf1e3668`.
 
 ## P2 — Exploratory analysis            (2026-08-13)
 
@@ -204,5 +208,35 @@ Made when the plan was drafted, before any code.
 | 12 | Only 0.6% of series (173) show a long dormant tail (>=180d trailing zero sales); no series ever drops out of the panel | fig `lifecycle_trailing_zero_run.png` | `days_since_last_sale` feature; a dedicated "discontinued series" model path | adopt (feature) / reject (dedicated path - group too small) |
 | 13 | 0 series have <28 days of history (lag-28 always computable); 1.36% have <365 days, affecting annual-seasonal feature reliability | fig `lifecycle_history_length.png` | `history_days` used to gate/down-weight annual-seasonality features for short-history series | adopt |
 | 14 | IQR-flagged spikes are common but almost all mild (median 1.45x fence); the extreme tail (>10x, 274 days / 0.0006% of rows) is plausible in magnitude, not a data-error signature; 43.2% of spikes align with an existing SNAP/event/price-drop flag | figs `outliers_spike_drivers.png`, `outliers_magnitude_distribution.png` | Clip/winsorize the training target for spikes | reject (see outlier policy above) |
+
+- **Readability refactor (2026-08-14):** every code section (Trend, Seasonality, SNAP, Events,
+  Price, Intermittency, Lifecycle, Outliers) split so each cell has one job — prepare data, or
+  plot/report it — per the new "Notebook conventions" section in `CLAUDE.md`. Verified section by
+  section via a line-diff against the pre-refactor commit (`324d85f`): every meaningful code line
+  (asserts included) accounted for, with one exception traced to a deliberate removal (the
+  now-redundant `sales_long["d"].max() <= TRAIN_END` assertion, since the parquet `filters`
+  argument already enforces the training-range cut at read time). Caught and fixed one real bug
+  in the process: the Trend/assortment data-prep cell was missing `pct_change_units`/`_series`/
+  `_per_series`, which the plot cell referenced — would have raised `NameError` on a fresh run.
+- **Issues #22, #23, #24 fixed (2026-08-14)** — all three were latent robustness/perf gaps found
+  by a prior `/code-review` pass, none triggered by this dataset:
+  - **#22:** the Intermittency section's nonzero-count assert (`a15b5bd2`) compared `n_nonzero`
+    (0 for an all-zero series) against `n_nonzero_check` (`NaN` for the same series, since it's
+    built from an `is_nonzero`-filtered groupby) — `0 == NaN` is `False`, so the assert would
+    crash if an all-zero series ever appeared. Fixed with `.fillna(0)` before the comparison.
+  - **#23:** the SNAP section's per-state lift calculation (`fa90545e`) used `grp.loc[0]`/
+    `grp.loc[1]` after a groupby that only produces labels present in the data — would raise
+    `KeyError` if a state's SNAP flag were ever constant over the aggregated window. Fixed with
+    `.reindex([0, 1])` after the groupby.
+  - **#24:** the Outliers section's `is_snap` lookup (`810066cd`) used a Python-level row-wise
+    `.apply(..., axis=1)` over ~1M spike-day rows. Vectorized via a `(snap_CA, snap_TX, snap_WI)`
+    matrix indexed by each row's state column position (`to_numpy()[np.arange(n), col_idx]`).
+  - **Evidence:** full headless re-execution (`jupyter nbconvert --execute`) completed with exit
+    code 0, zero cell errors. Cross-checked printed figures against this file's existing
+    hypothesis-table/outlier-policy numbers post-fix — all identical (SNAP lift WI +2.52/TX
+    +1.95/CA +0.23 pct pts; ADI/CV² quadrants 72.7%/18.4%/6.1%/2.8%; 1,008,763 spike days, 43.2%
+    explained, driver counts 378,445 SNAP / 76,817 event / 18,500 price-drop) — confirming the
+    fixes are pure edge-case guards / a perf change, not a behavior change on this dataset.
+    `notebooks/02_eda.ipynb`, cells `a15b5bd2`, `fa90545e`, `810066cd`.
 
 <!-- Append phase entries below as gates are passed. -->

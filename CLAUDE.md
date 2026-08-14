@@ -95,6 +95,28 @@ holdout is the same shape as the real deliverable and lands on a week boundary.
 4. **Target encodings and aggregate statistics are fit on training folds only.**
 5. **No random train/test splits** — time series split chronologically, always.
 
+## Notebook conventions
+
+Each analysis cell should have one job: **prepare data**, or **plot/report it** — not both.
+Established in `02_eda.ipynb`'s Trend and Seasonality sections; apply it to every figure/finding
+in every notebook:
+
+- One cell computes everything needed for a figure (groupby/merge/rolling/model fit) and assigns
+  the result to clearly named variables. No plotting code in this cell.
+- A separate cell consumes those variables to build the figure or print a summary. No data
+  transformation here beyond formatting for display.
+- Downstream cells (interpretation markdown, later figures reusing the same aggregate) reference
+  the same variable names rather than recomputing them — one source of truth per quantity.
+- Repeated configuration (e.g. a list of `(column, title)` pairs looped over more than once) is
+  extracted into one named variable above the loop, not inlined at each use site.
+- Within a cell, a complex expression that's used more than once, or whose purpose isn't obvious
+  from reading it once, gets assigned to a named variable first rather than nested inline —
+  favor `upper_fence = q3 + 1.5 * iqr; is_spike = sales > upper_fence` over inlining the fence
+  calculation into the comparison.
+
+This is a readability convention, not a correctness one — it doesn't change what gets computed,
+only how it's organized and named.
+
 ## Workflow
 
 All changes go through a pull request — do not push directly to `main`. Use the PR template at
