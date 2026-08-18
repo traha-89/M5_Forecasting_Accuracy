@@ -195,8 +195,8 @@ Made when the plan was drafted, before any code.
 | # | Finding | Evidence | Proposed feature | Verdict |
 |---|---|---|---|---|
 | 1 | Raw trend (+81.3%) is mostly assortment growth (active series +152.9%); units per active series actually fell -36.7% | fig `trend_assortment.png` | Reject a raw-total trend/momentum feature; adopt one normalized against active-catalog size instead | reject (raw) / adopt (normalized) |
-| 2 | Weekend lift is real in every category but modest and fairly uniform (HOUSEHOLD +0.33, FOODS +0.28, HOBBIES +0.24 pct pts of trend) | fig `seasonality_dow_mstl.png` | Per-category day-of-week / weekend dummy | adopt |
-| 3 | Annual seasonal swing differs sharply by category: HOUSEHOLD (0.19 pct pts, Aug peak/Dec trough) is ~1.7x FOODS/HOBBIES (0.11) | fig `seasonality_month_mstl.png` | Per-category month-of-year / annual-harmonic feature, not pooled | adopt |
+| 2 | Weekend lift is strong in every category and fairly uniform across categories (HOUSEHOLD +33.5, FOODS +27.7, HOBBIES +24.0 pct pts of trend); Friday behaves like a transition day, not an ordinary weekday | fig `seasonality_dow_mstl.png` | Full 7-level `wday` categorical, not a binary weekend flag | adopt |
+| 3 | Annual seasonal swing differs sharply by category: HOUSEHOLD (18.5 pct pts, Aug peak/Dec trough) is ~1.7x FOODS/HOBBIES (10.9/11.1) | fig `seasonality_month_mstl.png` | Per-category month-of-year / annual-harmonic feature, not pooled | adopt |
 | 4 | FOODS SNAP lift is state-specific and varies ~10x: WI +2.5, TX +2.0, CA +0.2 pct pts of trend | fig `snap_lift_by_state.png` | Per-state SNAP flag matched to series `state_id` (not a single pooled `is_snap_day`) | adopt |
 | 5 | Closure holidays (Christmas -11.9%, Thanksgiving -8.4%, Easter -8.4%) dip on the day with a lead-up lift beforehand (Thanksgiving +15.1%); open-store federal holidays (Labor Day +12.5%) lift instead | fig `events_headline_phases.png` | Per-`event_name` dummy plus explicit lead-up/hangover offset dummies for the closure-holiday group | adopt |
 | 6 | Pooling by `event_type` nearly cancels the signal (`National` mean ~+0.2%, mixing dipping and lifting holidays) | fig `events_by_type.png` | A single pooled `event_type` feature | reject |
@@ -238,5 +238,30 @@ Made when the plan was drafted, before any code.
     explained, driver counts 378,445 SNAP / 76,817 event / 18,500 price-drop) — confirming the
     fixes are pure edge-case guards / a perf change, not a behavior change on this dataset.
     `notebooks/02_eda.ipynb`, cells `a15b5bd2`, `fa90545e`, `810066cd`.
+
+### SNAP effect size — units fix and scope decision (2026-08-14)
+
+- **Units bug (fixed).** `snap_lift_df` held raw `resid / trend` ratios (WI 0.0252) while the column
+  was named `snap_lift_pct_pts` and the plot's y-axis read "pct points of trend" — off by 100×. The
+  prose had always quoted the correctly-converted values (+2.5 pct pts), so no published number was
+  wrong, but the figure was. Converted at the point of computation; cell 27's figure regenerated.
+  Same class of bug as the Seasonality section's, so worth watching for on any `resid / trend` ratio.
+- **Day-of-month confound (investigated, not carried).** SNAP days are a fixed function of
+  day-of-month (all within days 1–15), and `MSTL(periods=(7, 365))` has no monthly component, so a
+  generic start-of-month effect sits in the residual alongside the SNAP effect. Two checks were run
+  and then **removed from the notebook**: (a) a placebo estimate on HOBBIES/HOUSEHOLD, which SNAP
+  cannot fund — lift was 7–10× smaller than FOODS (CA 0.04/0.10, TX 0.29/0.28, WI −0.38/−0.18),
+  so contamination is small; (b) a cross-state difference-in-differences using the states'
+  differing calendars — CA −0.21, TX +3.63, WI +5.19, same ranking as the naive estimate but
+  roughly double the magnitude for TX/WI, because the two estimators average over different
+  disbursement days.
+- **Why removed:** neither check changes the P5 feature. The decision that mattered — a per-state
+  `snap_<state>` flag rather than a pooled `is_snap_day` — follows from the schedules differing by
+  state (`snap_schedule.png`), not from any effect size, and LightGBM estimates the per-state
+  magnitude itself. Effect-size precision would matter for a parametric model with a hand-coded
+  coefficient; it does not here. Hypothesis-table row 4 was softened accordingly: the earlier
+  "varies ~10x" claim overstated what the naive estimate can support, and CA (+0.2) is not
+  distinguishable from zero. No significance testing was done, by the same reasoning.
+- **Do not redo this** unless a later phase needs a calibrated SNAP effect size rather than a flag.
 
 <!-- Append phase entries below as gates are passed. -->
