@@ -369,4 +369,74 @@ Made when the plan was drafted, before any code.
   `price_change_sales_response.png`, and no figure was deleted (the dropped cells produced printed
   output only).
 
+## P3 — Metrics            (2026-08-18)
+
+### Metric validation gaps found during implementation (2026-08-18)
+
+Recorded while P3 is still open, not at the gate: these are decisions about what the metric does and
+what the gate must prove, and the reasoning matters more than the diffs.
+
+- **Aggregated predictions were inflated by the horizon length.** `compute_wrmsse` joined
+  predictions to `actuals[["id"] + grouping_cols]` on `id` alone. `actuals` is long format — one row
+  per `(id, d)`, so 28 rows per series — which made it a many-to-many join, duplicating every
+  prediction row 28× and inflating the summed prediction at levels 2–12 by that factor. Fixed with
+  `.drop_duplicates()` on the right-hand lookup (`id → grouping columns` is exactly 1:1: 30,490 ids,
+  30,490 distinct triples). **The parquet is not implicated** — `data/processed/sales_long.parquet`
+  has zero duplicate `(id, d)` rows and no null prices; the shape was correct and the consumer's
+  join key was wrong.
+- **An empty weight window scored 0.0 instead of failing.** Weights come from `d_1886`–`d_1913`,
+  hardcoded. Any panel outside that range produced no weight rows, and the level score collapsed to
+  `(empty × empty).sum() == 0.0` — an apparently perfect score, for *any* forecast. Measured on a
+  toy panel: levels 2–12 all returned `0.0` for a forecast wrong by a factor of ~10,000; only
+  `Total` responded, and only because its weight is built as a literal one-entry Series. This is the
+  most dangerous failure mode the module can have (silent success), so it now raises. `weight_start`
+  / `weight_end` were added as parameters, defaulting to the competition window, so tests can supply
+  toy day indices instead of being silently no-op'd. **The defaults are unchanged and invariant 1
+  still holds** — the window must stay inside the training period.
+- **The tests did not test.** A test asserting `level_scores["Store"] == 0.0` passed against the
+  deliberately reintroduced fan-out bug, because of the empty-window collapse above. Verified by
+  mutation testing (reintroduce the bug, confirm the suite goes red) rather than by the suite being
+  green. This motivated validation item 4 and the "a gate item is only met by a check that can fail"
+  note now in `P3-metrics.md`. **Lesson worth keeping:** on this phase specifically, "tests pass" is
+  not evidence — the metric's failure modes are mostly silent-success, which is exactly what a
+  passing test looks like.
+- **`np.diff` on `int16` wrapped.** Sales are `int16`; the original implementation differenced and
+  squared in that dtype, so any day-over-day change above 181 units overflowed 32,767. Measured on
+  `HOBBIES_1_268_CA_1`: naive baseline 285.15 vs. a true 353.70, a 19% understatement of the RMSSE
+  *denominator*, which inflates that series' RMSSE. 51 of 30,490 series (0.17%) exceed the
+  threshold; largest single-day change in the panel is 645 units. Only the bottom level was exposed
+  — `groupby.sum()` promotes aggregates to `int64`. The vectorized rewrite fixes this incidentally
+  (pandas promotes to float32); an explicit `float64` cast was added for exact precision and to
+  guard the nullable-`Int16` path, where `groupby.diff()` does still return `Int16`.
+- **Silent fallbacks replaced with explicit failures.** A series with a weight but no RMSSE was
+  scored `0` (treated as a perfect forecast); `compute_mase` filled a missing naive MAE with `1.0`;
+  and `compute_naive_baseline_errors` declared a `training_end` parameter it never applied, so a
+  kwarg that appeared to enforce the train/holdout boundary did nothing. All three now raise or
+  actually filter.
+- **Performance: ~1.5–3 hours → 6.5 minutes.** `compute_naive_baseline_errors` looped per series
+  doing a full-frame boolean scan each time (O(series × rows); ~21 min at level 12 alone), and four
+  `.apply(..., axis=1)` string joins cost ~6.5 min per 46M-row frame. Both vectorized. The remaining
+  cost is the repeated 46M-row groupbys across 12 levels, not any Python loop.
+- **Toy panel rebuilt to actually satisfy validation item 1.** The original panel used *perfect*
+  forecasts, so every expected RMSSE was `0.0` — and `sqrt(0 / x) == 0` for any denominator, so it
+  could not detect a mis-scaled naive baseline. It also never exercised weights: `compute_weights`
+  and `compute_wrmsse` were never called on it, despite the brief naming weights explicitly. And its
+  "hand calculation" cell re-implemented the same logic in numpy and printed it, while the assertion
+  compared against a separate hardcoded `{A: 0, B: 0, C: 0}` — so the derivation and the check were
+  not connected. Rebuilt with imperfect forecasts giving non-zero hand-computed RMSSE (0.5, 1.0,
+  sqrt(1/3)), prices chosen so dollar-sales weights land on 0.2/0.6/0.2, days moved to
+  `d_1904`–`d_1913` so they fall inside the weight window, and 10 quantities asserted (naive MSE,
+  RMSSE, weights, WRMSSE). Expected values are transcribed literals, not recomputed — a
+  re-implementation would reproduce any shared bug. **Verified by mutation:** the panel now rejects
+  a 2x-mis-scaled denominator, removal of the leading-zero trimming, and weights computed on units
+  instead of dollars.
+- **Result.** All-zeros forecast now gives WRMSSE = **5.4465**, all 12 levels finite, aggregate
+  levels scoring worse than bottom levels as expected. This satisfies validation item 3 — but note
+  it did so *before* these fixes too, which is the point of adding item 4.
+- **Gate passed 2026-08-18.** All six items verified in a full notebook run, each derived from a
+  computed value rather than a hardcoded `[x]`. Residual soft spot recorded in `P3-metrics.md`: the
+  suite catches 1 of 3 injected `compute_wrmsse` bugs (the two survivors are masked by a redundant
+  guard and by pandas dtype promotion respectively, so neither is a live hole), making
+  `compute_wrmsse` the thinnest coverage in this phase.
+
 <!-- Append phase entries below as gates are passed. -->
