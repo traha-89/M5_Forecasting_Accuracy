@@ -199,7 +199,7 @@ Made when the plan was drafted, before any code.
 | 3 | Annual seasonal swing differs sharply by category: HOUSEHOLD (18.5 pct pts, Aug peak/Dec trough) is ~1.7x FOODS/HOBBIES (10.9/11.1) | fig `seasonality_month_mstl.png` | Per-category month-of-year / annual-harmonic feature, not pooled | adopt |
 | 4 | FOODS SNAP lift is state-specific and varies ~10x: WI +2.5, TX +2.0, CA +0.2 pct pts of trend | fig `snap_lift_by_state.png` | Per-state SNAP flag matched to series `state_id` (not a single pooled `is_snap_day`) | adopt |
 | 5 | Closure holidays (Christmas -11.9%, Thanksgiving -8.4%, Easter -8.4%) dip on the day with a lead-up lift beforehand (Thanksgiving +15.1%); open-store federal holidays (Labor Day +12.5%) lift instead | fig `events_headline_phases.png` | Per-`event_name` dummy plus explicit lead-up/hangover offset dummies for the closure-holiday group | adopt |
-| 6 | Pooling by `event_type` nearly cancels the signal (`National` mean ~+0.2%, mixing dipping and lifting holidays) | fig `events_by_type.png` | A single pooled `event_type` feature | reject |
+| 6 | Pooling by `event_type` still can't replace per-event dummies: mean-absolute effect (fixing the earlier signed-mean's dip/lift cancellation) shows `National` has the largest typical magnitude (5.17%), but the aggregate can't say which direction any given National event moves sales | fig `events_by_type.png` | A single pooled `event_type` feature | reject |
 | 7 | Price changes are rare: median 0.7% of weeks change, 27.5% of series never change price, median gap ~91 weeks between changes | fig `price_change_frequency.png` | A price-change-recency / "still at original price" structural-break flag | adopt |
 | 8 | Sales response to a price change is noise-dominated at the pooled level (Spearman corr with normalized sales: raw price -0.028, relative-to-baseline price +0.024 - both near zero, one sign-flipped) | fig `price_change_sales_response.png` | A pooled cross-sectional price-elasticity coefficient | reject |
 | 9 | 91% of series fall in the sparse ADI/CV² quadrants (intermittent 72.7%, lumpy 18.4%); only 6.1% are smooth | fig `intermittency_adi_cv2_quadrants.png` | Segment label from `series_segments.parquet` used for model routing (esp. isolating the 18.4% lumpy group) | adopt |
@@ -263,5 +263,110 @@ Made when the plan was drafted, before any code.
   "varies ~10x" claim overstated what the naive estimate can support, and CA (+0.2) is not
   distinguishable from zero. No significance testing was done, by the same reasoning.
 - **Do not redo this** unless a later phase needs a calibrated SNAP effect size rather than a flag.
+
+### Trend section — removed raw by-level rolling average (2026-08-18)
+
+- **Removed (post-gate).** `02_eda.ipynb`'s Trend and level section plotted a raw 28-day rolling
+  average of units split by state/store/category/department (`by_level_data`, saved as
+  `trend_by_level.png`). On review it added no decision-relevant information: it carries the same
+  demand-vs-assortment ambiguity as the pooled MSTL trend earlier in the same section, its own
+  interpretation text never cited it, and the by-level claim in hypothesis-table row 1 ("universal
+  across every state/store/category/department") is already fully supported by the
+  units-per-active-series growth check (`trend_by_level_growth.png`) that stays in the notebook.
+  Scale differences between groups don't need a separate feature either — categorical identity
+  (`state_id`/`store_id`/`cat_id`/`dept_id`, already planned for P5) lets the tree learn each
+  group's baseline level directly from the split. Removed per the CLAUDE.md EDA-scope rule: does
+  this change what gets built? A markdown note was left in the notebook at the removal point
+  recording that this was reviewed and dropped.
+- **P2 gate unaffected.** The gate passed 2026-08-13 citing `trend_assortment.png` for hypothesis
+  row 1, not `trend_by_level.png` — nothing in the passed gate depended on the removed figure, and
+  the brief's "split by state/store/category/department" requirement (`P2-eda.md` line 28) is still
+  satisfied by the growth-by-level cells that remain. No change needed to `P2-eda.md`.
+
+### Events section — headline event selection (2026-08-18)
+
+- **What changed.** `P2-eda.md`'s Events bullet names Super Bowl, Thanksgiving, Easter, and
+  Christmas as the events expected to "behave very differently from one another." That was a
+  pre-EDA hypothesis about which events would be worth contrasting, not a final selection — once
+  the full 30-event `event_effect_df` table existed, all four named events turned out to share the
+  *same* behavioral pattern (event-day dip, +lead-up, closure/gathering holidays). No event
+  showing the opposite pattern (event-day lift, stores open — LaborDay/MemorialDay/PresidentsDay)
+  was represented in the notebook's headline comparison chart, even though the Interpretation
+  section's own prose describes both patterns as the key finding.
+- **Redefinition.** "Headline events" (the small subset used for the illustrative side-by-side
+  chart, as opposed to the full sortable table) is now defined as: a set representing every
+  distinct behavioral pattern found in `event_effect_df`, at least 2 events per pattern, using
+  largest-`|event_day_pct|` within a pattern as the tiebreaker — not a top-magnitude-overall
+  ranking and not solely the brief's originally-named events. Concrete selection: dip pattern =
+  Christmas, Thanksgiving, Easter, SuperBowl (the brief's original 4, kept since all are
+  legitimately dip-pattern examples); lift pattern = LaborDay, MemorialDay (the 2 largest-effect
+  lift events, added because the brief's set had none). Chart split into two panels (dip vs. lift)
+  for visual clarity rather than one panel mixing both.
+- **Why this doesn't change the feature decision.** The "Feature implication" in the Interpretation
+  cell already selects features (per-`event_name` dummies for the largest-`|event_day|` events,
+  plus lead-up/hangover dummies for the closure group) off the full table, not off the headline
+  chart's contents — LaborDay was never excluded from the actual feature plan, only from the
+  illustrative figure. This is purely a documentation/visualization fix so the figure matches its
+  own stated purpose.
+- **P2 gate unaffected.** Passed 2026-08-13; the gate's hypothesis-table row for Events cites
+  effect sizes from the full table, not the headline chart specifically. `P2-eda.md` was updated
+  (Events bullet) to note that the named events are a starting hypothesis and to point future
+  headline-event selection at this entry, since the same one-sided-hypothesis risk could recur.
+
+### Events section — event_type aggregate: mean → mean-absolute (2026-08-18)
+
+- **What changed.** The `event_type` bar chart/table (`events_by_type.png`) originally aggregated
+  `event_day_pct` with a signed `mean`. Because `National` mixes dip events (Christmas,
+  Thanksgiving) with lift events (LaborDay, MemorialDay, PresidentsDay), the signed mean canceled
+  to a near-zero, misleading number (~+0.2%), making `National` look like the quietest type when
+  it actually contains the largest effects in the dataset in both directions.
+- **Fix.** Switched the aggregate to mean **absolute** effect (`s.abs().mean()`), which reports
+  typical magnitude regardless of sign. `National` now correctly reads as the largest (5.17%),
+  ahead of `Cultural` (3.72%) and `Sporting` (3.44%); `Religious` (0.98%) is genuinely the
+  quietest. Table values also switched to `.round(4)` display (4 decimal places) instead of
+  formatted percent strings, matching the plain numeric style already used for `type_effect`.
+- **Why this doesn't change the feature decision.** The point of this chart/table has always been
+  to show that a pooled `event_type` feature is unusable — the mean-absolute version makes that
+  case even more directly (large magnitude, direction unknowable) than the misleading near-zero
+  signed mean did. The feature implication (per-`event_name` dummies, not per-`event_type`) was
+  never derived from this aggregate and is unchanged. Hypothesis-table row #6 in this file and the
+  notebook's Events Interpretation cell were both updated to cite the corrected number.
+- **P2 gate unaffected.** Passed 2026-08-13; this is a bug fix to an EDA-stage aggregate, not a
+  change to scope, invariants, or the gate's feature-decision output.
+
+### Price section — promo inference dropped (2026-08-18)
+
+- **What was there.** The Price section carried a "promo-inference tie-in" (two cells, plus intro
+  and interpretation prose): weeks priced >=10% below a series' own trailing baseline were flagged
+  as "candidate promo weeks", and their overlap with named-event weeks (45.1%) was compared against
+  the all-weeks baseline rate (47.2%) to test whether event dummies would already capture promo
+  effects. This was **not** requested by `P2-eda.md` — the brief's Price bullet asks only for
+  distribution/dispersion, change frequency, sales response, and relative-vs-raw price. It was
+  self-added scope, carried over as a question deferred from the Events section.
+- **Why it's dropped.** M5 ships no promotion label, so any promo flag is an inferred construct. A
+  thresholded "is this week a promo" indicator is a binarized, strictly lossy version of the
+  continuous `relative_price` (price / own trailing baseline) feature the section already computes:
+  a GBM can split `relative_price` at whatever cut is actually predictive, per item and in
+  interaction with events/SNAP, whereas the 0.90 threshold hardcodes one arbitrary guess. Per
+  `CLAUDE.md`'s "does this change what gets built?" test, the check changed no feature decision —
+  it came back negative, and the feature it was evaluating is one we now decline to build at all.
+- **A validity problem also surfaced, and is moot now.** The flag was described as catching
+  "temporary price drops (dip then recover)", but the condition only tested a single week against
+  the trailing baseline and never required recovery. Measured directly: 77.1% of flagged weeks are
+  still flagged in the series' next observed week, i.e. the majority are sustained repricings (the
+  4–15-week rolling baseline simply hasn't caught up yet), not temporary markdowns. Tightening the
+  definition to require recovery was considered and rejected — it would have made the label more
+  defensible without making it useful, since the continuous feature supersedes it either way.
+- **What replaces it.** `relative_price` is kept and now explicitly framed as a *continuous* price
+  sensitivity input. Note this does not contradict hypothesis-table row #8: the near-zero Spearman
+  correlations reject a **pooled scalar elasticity coefficient**, not price as a model input —
+  Spearman measures only pooled monotonic response and cannot see per-item, non-monotonic, or
+  price x event/SNAP interaction effects that a GBM can. The price-change-**recency** feature is
+  also kept and is unrelated to promo inference; it encodes "how stale is this price", which is
+  structurally meaningful given 27.5% of series never reprice.
+- **P2 gate unaffected.** Passed 2026-08-13. Removing self-added scope doesn't reopen a brief
+  requirement; the gate's hypothesis table has no promo row, row #8 is unchanged and still cites
+  `price_change_sales_response.png`, and no figure was deleted (the dropped cells produced printed
+  output only).
 
 <!-- Append phase entries below as gates are passed. -->
