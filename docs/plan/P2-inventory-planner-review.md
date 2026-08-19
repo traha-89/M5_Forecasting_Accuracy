@@ -57,3 +57,44 @@ move over target manipulation.
 (value) tiers — no revenue/margin cut appears anywhere in this notebook. Before building
 reorder-point logic, that should be cross-tabulated (AX vs. CZ), since the safety-stock
 service-level target should differ by cell, not just by demand pattern.
+
+---
+
+## Re-review (2026-08-19)
+
+The notebook has been through several rounds of interpretation trims and figure fixes since the
+above was written. Every number this review cites — portfolio quadrant split (72.7%/18.4%/6.1%),
+trend (+81.3% raw / -36.7% per-active-series / +152.9% catalog), SNAP lift (WI +2.5, TX +2.0,
+CA +0.2), price change rate (0.7%/27.5%), and outlier policy (274 extreme days, 43.2% explained)
+— is unchanged. The findings and recommendations above still stand. Two things are worth
+amending, not because anything was wrong, but because the notebook now says more than it did:
+
+**Softening my own Croston's/SBA framing — one word swap that matters.** The notebook's
+Intermittency section now states the quadrant label should drive *loss/objective choice within
+the project's already-fixed GBM family* (Tweedie/Poisson for `intermittent`, something beyond a
+single Tweedie fit for `lumpy`) rather than a switch to Croston's/SBA. That's a legitimate call,
+not a gap — this project committed to LightGBM/XGBoost from the start (per `CLAUDE.md`'s model
+shortlist), and a well-tuned Tweedie-objective GBM with SNAP/event/price features already built in
+is a reasonable, arguably stronger, substitute for Croston's on lumpy retail demand, which
+classical intermittent-demand methods can't take side-information from at all. I'd revise my
+original wording ("needs Croston's/SBA... as the default") — that's true only if you're picking a
+*forecasting method* from a blank slate, which this project isn't.
+**But this doesn't touch the actual risk I was flagging.** My concern was never really about which
+point-forecast algorithm to use — it's that **safety stock and reorder-point sizing for P9 still
+can't use the textbook normal-distribution formula for 91% of this portfolio**, no matter how good
+the point forecast is. A Tweedie-GBM forecast for a lumpy series is still a forecast of a lumpy,
+non-normal distribution; P9 still needs a bootstrapped or simulation-based safety-stock
+calculation off that distribution, not `SS = Z × σ_d × √(LT)`. That risk is unchanged and still the
+top item to carry forward.
+
+**One reinforcing cross-reference, not in the original review.** The Outliers section now reports
+the driver breakdown for the 43.2% of spikes with a known cause: SNAP alone explains 378k of the
+436k explained spike-days (86.7%) — well ahead of events (76.8k) and price drops (18.5k). That's a
+second, independent confirmation of this review's SNAP paragraph: state-specific SNAP timing isn't
+just a clean baseline-demand signal, it's also the dominant explanation for *why* individual days
+spike, which strengthens the case for SNAP-aware DC-level replenishment timing specifically for
+FOODS, state by state.
+
+**The ABC/value-tier gap for P9 is still open** — nothing in this round of edits added a
+revenue/margin cut. Unchanged recommendation: cross-tabulate quadrant × ABC before building
+reorder-point logic.
