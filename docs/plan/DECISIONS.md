@@ -459,4 +459,125 @@ what the gate must prove, and the reasoning matters more than the diffs.
   guard and by pandas dtype promotion respectively, so neither is a live hole), making
   `compute_wrmsse` the thinnest coverage in this phase.
 
+## Plan review — P4–P9 reconciled against P1–P3 findings            (2026-08-19)
+
+Made after P3 passed, before P4 started. The P4–P9 briefs were written pre-EDA; this reviews them
+against what P1–P3 actually measured. No phase reordered or dropped. Briefs were edited in place —
+the rationale lives here, not in them.
+
+### Corrections that would have invalidated comparisons
+
+- **Fold-local weight and scale windows.** `src/metrics.py` defaults `training_end` to 1913 and the
+  weight window to `d_1886`–`d_1913`. Folds 1 and 2 train to `d_1829`/`d_1857`, so the defaults score
+  them using days after their own training cutoff. Not an invariant-1 breach (all days ≤ `d_1913`),
+  but it makes the metric fold-dependent, and P4/P6/P7 must resolve it identically or the P6 gate
+  compares incompatible numbers. **Decision:** for a fold predicting `[a, b]`, `training_end = a-1`
+  and weight window `[a-28, a-1]` — matching M5's own definition (the 28 days before the forecast
+  window) and what the P7 holdout scoring does by default. Pinned in `README.md`'s fold table.
+- **A CA_1 WRMSSE is not comparable to a full-panel WRMSSE.** On one store the 12 aggregation levels
+  collapse — Total = State = Store, levels 6–9 into 4–5, levels 10–12 into each other — leaving 4
+  distinct levels counted with multiplicity over weights renormalized within the store. P6's gate
+  ("beats the P4 seasonal-naive WRMSSE") was therefore comparing against the wrong denominator.
+  **Decision:** P4 scores every baseline at both `full` and `CA_1` scope; `reports/baselines.csv`
+  gains a `scope` column; P6 compares against the `CA_1` rows.
+- **Early stopping on the scored fold is a within-CV leak.** P6 said "early stopping on the fold". If
+  the stopping set is the fold's own 28 prediction days, every fold score is optimistically biased
+  and the four-way comparison is biased with it — the arm with the most tuning surface wins by
+  construction. **Decision:** inner split. For a fold predicting `[a, b]`, stop on `[a-28, a-1]` and
+  fit on `d_1` through `d_(a-29)`. P6's fold table now states the training end separately from the
+  fold window.
+
+### Dropped hand-offs
+
+- **Dead series.** P1 deferred the 955-series (3.1%) handling decision to P7; P7's brief and gate
+  never mentioned it, and P8's pre-flight referenced a list that was not in the data contract.
+  **Decision:** P4 writes `reports/dead_series.csv` (it already loads the parquet), P7 owns the
+  policy as a gate item, P8 checks against the file.
+- **Lumpy quadrant evaluation.** P2 hypothesis row 9 assigned "evaluate the lumpy group separately at
+  P6", but P6's candidates and gate contained no such arm. **Decision:** added as a conditional P6
+  gate item — checked always, a two-stage or quantile arm built only if lumpy is shown to drag the
+  weighted score. CA_1 is a fair place to test it: its quadrant mix (71.9% intermittent / 18.0%
+  lumpy / 7.6% smooth / 2.5% erratic) closely tracks the panel (72.7/18.4/6.1/2.8) and its lumpy
+  share sits mid-range across the ten stores (13.2% CA_4 to 22.7% CA_2).
+
+### Evaluation windows contain no closure holiday
+
+Checked `calendar.csv` against every scored window. Christmas, Thanksgiving, LaborDay, Halloween and
+NewYear — the largest effects P2 measured — fall in **no fold, no holdout, and not in the forecast
+window**. Fold 3 contains no event at all. The forecast window's four events (MemorialDay,
+NBAFinalsStart, Ramadan start, NBAFinalsEnd + Father's day) appear in no validation window, so the
+event features are unvalidated exactly where the deliverable depends on them.
+
+- **Decision:** do not build the bespoke closure-holiday lead-up/hangover dummies from hypothesis row
+  5 — nothing can validate them and the deliverable window has no closure holiday. The generic
+  days-to / days-since-nearest-event features cover the training signal. Recorded as a known weakness
+  in P7's model card and P8's write-up rather than engineered around.
+- **Not adopted:** a diagnostic Nov–Dec fold was considered to give the event features one look. It
+  would validate features the deliverable window cannot use, so it fails the "does this change what
+  gets built?" test.
+
+### P5 feature list reconciled against the P2 hypothesis table
+
+Dropped, each against its row: `is_weekend` (row 2 — the 7-level `wday` determines it, and a binary
+flag miscodes the Friday transition day the EDA singled out); `event_type_1/2` (row 6, verdict
+`reject` — type is a function of name); `week-of-year` (row 3 — 52 levels at ~5 observations per
+series memorizes dates; replaced by day-of-year harmonics, which is what "annual harmonic" meant);
+`days since panel start` (a monotone global index is saturated at its terminal split for every
+forecast day, and reintroduces row 1's rejected raw-trend confound); `price rank within dept×store`
+and `count of distinct prices` (unsupported by any row; at a 0.7% weekly change rate both are
+near-static per series, and the latter is a full-history statistic, so a leakage source); rolling
+`std` at 7 and 14 (row 10 — at a 63.5% median zero rate these measure the zero pattern, not
+dispersion; kept at 30/60/180).
+
+Added: `days_since_release` / `history_days` per series (rows 11, 13 — 64.1% of series joined after
+`d_1`; the panel-relative index that was there is a different quantity); day-of-year `sin`/`cos`
+(row 3); `never_repriced` (row 7 — 27.5% of series never reprice, so "weeks since last price change"
+is undefined for over a quarter of the panel and a NaN splits differently from a sentinel);
+non-zero-conditional rolling means at 30/60/180 (row 10); `is_closure_day` (P1's five Christmas
+closures — without it `lag_364` reads a structural zero as real demand).
+
+Also decided: **NaN stays NaN** for `lag_364` and the 180-day windows (1.36% of series, row 13) —
+both libraries handle it natively, and a zero-fill asserts "no sales a year ago", which is false and
+fails silently as a plausible number rather than a crash. **No clipping** (P2 outlier policy).
+**`quadrant`/`adi`/`cv2` are not features** — static full-history statistics, redundant with the
+Intermittency family, and `series_segments.parquet` stays a P6/P7 evaluation grouping key.
+**`day-of-month` and the SNAP flag both stay** despite collinearity, because the placebo check found
+a residual non-SNAP start-of-month effect. Net count is roughly unchanged, so P5's 1.4 GB/store and
+<8 GB gate estimates stand.
+
+- **Encodings cannot live in the store partitions.** Invariant 4 requires them fit per training fold;
+  the data contract stored one static partition per store. Three folds need three encoding sets.
+  **Decision:** `src/features.py` exposes `build_encodings(train_slice)` called inside the fold loop;
+  partitions exclude encoding columns, and P5's gate checks that.
+
+### Smaller changes
+
+- **P4 runtime.** P3 measured ~6.5 min per full WRMSSE evaluation; 5 baselines × 3 folds × 2 scopes
+  run naively is hours. Naive errors and weights depend only on the fold — computed once per fold and
+  reused.
+- **Tweedie vs. Poisson were nearly the same model.** `tweedie_variance_power=1.1` sits almost on
+  Poisson, undercutting the stated rationale of isolating the objective. Swept over 1.1/1.3/1.5.
+  The tuning sweep also moved from `learning_rate`/`num_leaves` to `tweedie_variance_power` and
+  `min_data_in_leaf`, which are the parameters the 68.2% zero rate gives a reason to care about.
+- **StatsForecast scored per sub-model.** Croston/ADIDA/IMAPA/TSB emit a flat 28-day forecast with no
+  weekly shape, while `SeasonalNaive(7)`/`DynamicOptimizedTheta(7)` carry one — and row 2 found the
+  weekend lift is the strongest signal in the data. A single blended number would be dominated by
+  the mix and would not say why the per-series arm won or lost.
+- **P7's full StatsForecast run made conditional** on P6 showing it competitive somewhere; its only
+  job is evidence for the segmentation decision.
+- **P7 blend weights capped** at equal-weight or a single scalar — the brief already warned that a
+  routing rule fitted to noise is worse than none; three folds of 28 days makes the same true of
+  blend weights.
+- **P8 plausibility band made per-category and directional**, using row 3's 18.5 pct-pt HOUSEHOLD
+  annual swing and row 1's catalog-growth-with-falling-velocity finding: the comparison and forecast
+  windows sit at different points on the annual curve, so flat-to-mildly-up is expected, not a bug.
+- **P8 gains a SNAP-shape pre-flight check.** SNAP explains 86.7% of spike-days with a known driver
+  and the forecast window contains a full June 1–15 cycle, so a flat FOODS response there catches a
+  mis-joined state flag far more reliably than the generic weekly-shape plot.
+- **P9 (still parked):** the quantile objective P6 may test on lumpy is the same mechanism P9 needs
+  for a demand distribution, so it would resolve P9's stated blocking dependency; ABC tiers come off
+  `compute_weights`' dollar-sales share.
+- **Verified, no change needed:** P7's "full 42,840-series WRMSSE" is correct — that is the sum
+  across all 12 hierarchy levels, not a typo for 30,490.
+
 <!-- Append phase entries below as gates are passed. -->

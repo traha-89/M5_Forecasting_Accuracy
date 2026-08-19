@@ -30,18 +30,33 @@ A lag-7 feature will look excellent in training and be unavailable at prediction
 
 | Family | Features |
 |---|---|
-| Calendar | `wday`, `month`, `year`, week-of-year, day-of-month, `is_weekend`, days since panel start |
-| Events | `event_name_1/2`, `event_type_1/2` as categoricals; days-to and days-since nearest event |
+| Calendar | `wday` (7-level categorical), `month`, `year`, day-of-month, `sin`/`cos` of day-of-year, `is_closure_day` |
+| Events | `event_name_1/2` as categoricals; days-to and days-since nearest event |
 | SNAP | snap flag **matched to the series' own state**, not all three columns |
-| Price | `sell_price`; price ÷ item's rolling mean; price ÷ item's historical max; price-change flag; weeks since last price change; price rank within dept×store; count of distinct prices |
+| Price | `sell_price`; `relative_price` (price ÷ item's rolling mean); price ÷ item's historical max; price-change flag; weeks since last price change; `never_repriced` |
 | Lags | sales at lag 28, 29, 30, 35, 42, 49, 56, 364 |
-| Rolling | mean / std / max over 7, 14, 30, 60, 180 windows, **all computed on lag-28 sales**; same-weekday rolling mean |
+| Rolling | mean / max over 7, 14, 30, 60, 180 windows and std over 30, 60, 180, **all computed on lag-28 sales**; non-zero-conditional mean over 30, 60, 180; same-weekday rolling mean |
 | Intermittency | days since last non-zero sale; non-zero count in last 28 / 60; mean sales conditional on non-zero |
+| Lifecycle | `days_since_release`, `history_days` — per series, not panel-relative |
 | Identity | `item_id`, `dept_id`, `cat_id`, `store_id`, `state_id` as native LightGBM categoricals |
-| Encodings | mean sales by item, item×store, dept×store, cat×wday — **fit on training folds only** |
+| Encodings | mean and non-zero-conditional mean by item, item×store, dept×store, cat×wday — **fit on training folds only**, so exposed as `build_encodings(train_slice)` and *not* written into the store partitions |
 
-Add or drop features based on the P2 hypothesis table; this list is the starting point, not a
-mandate. Record deviations in `DECISIONS.md`.
+Roughly 60 features per store. Deviations from this list go in `DECISIONS.md`.
+
+## Build rules
+
+- **NaN stays NaN.** 1.36% of series have under 365 days of history, so `lag_364` and the 180-day
+  rolling windows are undefined for them. LightGBM and XGBoost handle NaN natively; a zero-fill
+  asserts "no sales a year ago", which is false.
+- **Do not clip or winsorize the target** (P2 outlier policy). Rolling `max` is spike-driven by
+  design.
+- **Do not join `quadrant`/`adi`/`cv2` as features.** They are static full-history statistics and
+  redundant with the Intermittency family; `series_segments.parquet` is a P6/P7 evaluation grouping
+  key only.
+- **Keep both `day-of-month` and the SNAP flag** despite their collinearity — there is a residual
+  non-SNAP start-of-month effect.
+- **No global time index.** A monotone counter is saturated at its terminal split for every
+  forecast day, so it cannot inform the horizon; use the per-series lifecycle features instead.
 
 ## Memory discipline
 
@@ -65,7 +80,7 @@ Every feature must be answerable: *would this value be knowable at prediction ti
 - Calendar/events/SNAP: yes — `calendar.csv` covers the forecast window through `d_1969`.
 - Price: yes for the horizon, using the last observed weekly price. Confirm the forward-fill rule.
 - Encodings: **only if fit on the training fold**, not the full series. This is the most common
-  leakage source in the whole project.
+  leakage source in the whole project, and why they are computed at fit time rather than stored.
 
 Document this check per family in the notebook — it is a gate item.
 
@@ -74,7 +89,8 @@ Document this check per family in the notebook — it is a gate item.
 - [ ] CA_1 partition builds in <5 min, peak RAM <8 GB (both measured and recorded)
 - [ ] Leakage review documented per feature family
 - [ ] All lags and rolling windows confirmed ≥28
-- [ ] `src/features.py` importable; notebook imports rather than redefines
+- [ ] `src/features.py` importable, exposing `build_features` and `build_encodings`; notebook imports rather than redefines
+- [ ] Partitions confirmed to contain no encoding columns
 - [ ] Feature count and partition sizes recorded in `DECISIONS.md`
 
 ## Invariants
