@@ -68,6 +68,12 @@ PR; don't start the next phase in the same session. Every artifact that crosses 
 a pinned path and schema in the data contract in `docs/plan/README.md` — load those by name rather
 than inventing paths.
 
+**Scope EDA to feature decisions, not effect-size precision.** The model family is gradient-boosted
+trees (LightGBM/XGBoost) — they learn interaction effects and magnitudes from data directly. EDA's
+job is to decide whether a feature should exist and how it should be scoped, and to catch
+leakage/confounds that would corrupt training — not to quantify a calibrated effect size for its own
+sake. Before adding analysis beyond that, ask: does this change what gets built?
+
 ### Forecast horizons
 
 `sales_train_evaluation.csv` covers `d_1`–`d_1941`; `calendar.csv` runs to `d_1969`.

@@ -40,6 +40,14 @@ a proper effect size rather than a glance.
 including lead-up and hangover days. Super Bowl, Thanksgiving, Easter, and Christmas behave very
 differently from one another — an aggregate "is_event" flag will hide this.
 
+The four events named above are a starting hypothesis, not a prescribed final selection — they
+turned out to all share one behavioral pattern (event-day dip, closure/gathering holidays). Once
+the full per-event effect table exists, pick the notebook's "headline" comparison set — the small
+subset used for the illustrative side-by-side chart — to represent *every* distinct behavioral
+pattern found in that table (at least 2 events per pattern), not just the events named here or the
+ones with the largest raw effect size. See `DECISIONS.md` ("Events section — headline event
+selection") for the concrete example.
+
 **Price.** Distribution and dispersion; sales response to a price change; how often prices move;
 whether an item's price *relative to its own history* predicts better than the raw level.
 
