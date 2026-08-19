@@ -22,7 +22,10 @@ selection on the test set, and the reported number becomes fiction.
 
 **The order is fixed and not negotiable:**
 
-1. Train every configuration across all 10 store partitions; run StatsForecast over all 30,490 series.
+1. Train every configuration across all 10 store partitions. Run StatsForecast over all 30,490
+   series **only if P6's quadrant breakdown showed it competitive on some segment** — its purpose is
+   evidence for the segmentation decision below, so if it lost everywhere in the pilot, skip it and
+   record that.
 2. Score everything on the **rolling-origin CV folds**. Pick the winning model and any ensemble
    blend weights **here**, from CV alone.
 3. *Then*, once, score the selected model on `d_1914`–`d_1941`, full 42,840-series WRMSSE.
@@ -58,7 +61,15 @@ StatsForecast beats the gradient-boosted models on the intermittent/lumpy quadra
 a routed ensemble is justified by evidence. If it doesn't, take the single best model and skip the
 complexity — a routing rule fitted to noise is worse than no routing.
 
-Whatever is decided, blend or routing weights are fit on **CV folds**, never on the holdout.
+Whatever is decided, blend or routing weights are fit on **CV folds**, never on the holdout. Three
+folds of 28 days is thin: restrict blending to equal weights or a single scalar. Per-level or
+per-quadrant weights fitted on three points are fitted to noise.
+
+## Dead series
+
+955 series (3.1%) have zero sales across `d_1854`–`d_1913` (`reports/dead_series.csv`). Decide their
+handling here — forecast normally, force zero, or exclude — and record it. P8's pre-flight checks
+flat-zero forecasts against this list.
 
 ## Output — the model card
 
@@ -67,13 +78,15 @@ Record in `DECISIONS.md` and the notebook:
 - Chosen approach and why
 - Holdout WRMSSE, plus per-level breakdown
 - Comparison against all five P4 baselines and all four P6 candidates
-- Known weaknesses (which segments/levels it handles poorly)
+- Known weaknesses (which segments/levels it handles poorly), including that no CV fold or holdout
+  window contains a closure holiday, so the event features are unvalidated
 - Training runtime and resource profile
 - Anything that would be tried next given more time
 
 ## Gate
 
-- [ ] All configurations trained across 10 stores; StatsForecast over all 30,490 series
+- [ ] All configurations trained across 10 stores; StatsForecast run or its skip justified from P6
+- [ ] Dead-series handling decided and recorded
 - [ ] Models persisted to `models/full/<model>_<store>.<ext>`
 - [ ] `reports/full_scores.csv` written and committed
 - [ ] Model and blend weights selected on **CV only**, before the holdout is touched

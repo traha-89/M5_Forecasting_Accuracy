@@ -106,3 +106,13 @@ Same invariants as the rest of the plan apply here, in particular:
   through each fold, not on a random split.
 
 Full list: [README](README.md#invariants).
+
+## Notes carried from P2
+
+- The quantile objective P6 may test on the lumpy quadrant is the same mechanism this phase needs to
+  turn point forecasts into a demand distribution — if P6 ran it, the blocking dependency is resolved.
+- ABC value tiers are not in the EDA. `compute_weights` in `src/metrics.py` already produces the
+  dollar-sales share they would be cut from; cross-tabulate against `quadrant` before sizing
+  reorder points.
+- Safety stock cannot use `SS = Z × σ_d × √(LT)` for 91% of this portfolio — bootstrap or simulate
+  off the forecast distribution instead.

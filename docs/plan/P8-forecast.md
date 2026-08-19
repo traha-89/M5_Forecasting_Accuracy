@@ -27,6 +27,10 @@ Build features for the forecast window from:
 All lags are ≥28, so every feature for `d_1942`–`d_1969` is computable from observed data with no
 recursion. Confirm this rather than assuming it.
 
+The window's events — MemorialDay, NBA Finals, Ramadan start, Father's Day — appear in no CV fold and
+no holdout, so the event features are unvalidated here. Note it in the write-up. The closure flag is
+inert in this window.
+
 ## Submission format
 
 `sample_submission.csv` has **60,980 rows in two blocks**:
@@ -46,9 +50,13 @@ Run all of these before writing the file:
 - [ ] Exactly 60,980 rows, in the template's id order
 - [ ] All predictions finite and ≥ 0
 - [ ] No NaN in any `F1`–`F28` column
-- [ ] Forecast totals within a plausible band of the last 28 observed days, allowing for trend and
-      seasonality — a 2× or 0.5× total is a bug, not a forecast
-- [ ] No series forecast flat-zero unless it is genuinely dead (cross-check the P1 dead-series list)
+- [ ] Forecast totals within a plausible band of the last 28 observed days, **per category** — the
+      comparison window (Apr 25–May 22) and the forecast window (May 23–Jun 19) sit at different
+      points on an annual curve that swings 18.5 pct pts for HOUSEHOLD, and catalog growth pushes
+      totals up while per-series velocity falls, so flat-to-mildly-up is the expected shape
+- [ ] FOODS forecasts lift on the June 1–15 SNAP days, per state — SNAP explains 86.7% of all
+      spike-days with a known driver, so a flat SNAP response means a mis-joined state flag
+- [ ] No series forecast flat-zero unless it is genuinely dead (cross-check `reports/dead_series.csv`)
 - [ ] The `F1`–`F28` profile shows the expected weekly shape, not a suspiciously smooth line —
       plot a sample of series and look at them
 

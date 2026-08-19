@@ -66,9 +66,10 @@ phases listed. Do not deviate from these paths — later phases load them by nam
 | `data/processed/sales_long.parquet` | P1 | P2, P4, P5 | Long panel, pre-release rows dropped. `id` `category`, `d` `int16`, `sales` `int16`, `date` `datetime64`, `wm_yr_wk` `int16`, calendar columns, `item_id`/`dept_id`/`cat_id`/`store_id`/`state_id` `category`, `sell_price` `float32` |
 | `data/processed/series_segments.parquet` | P2 | P6, P7 | One row per series: `id`, `adi` `float32`, `cv2` `float32`, `quadrant` `category` (smooth / erratic / intermittent / lumpy) |
 | `src/metrics.py` | P3 | P4, P6, P7, P8 | `wrmsse()`, per-level breakdown, RMSSE, WMAE, MASE, bias |
-| `reports/baselines.csv` | P4 | P6, P7 | `baseline`, `fold`, `wrmsse`, `rmsse`, `wmae`, `bias_pct` |
-| `src/features.py` | P5 | P6, P7, P8 | `build_features(store_id, …)` — the single definition used by pilot and full run alike |
-| `data/processed/features/store_id=<STORE>/part.parquet` | P5 | P6, P7, P8 | One partition per store. Engineered features `float32`, `sales` `int16`, ids `category` |
+| `reports/baselines.csv` | P4 | P6, P7 | `baseline`, `fold`, `scope` (`full` / `CA_1`), `wrmsse`, `rmsse`, `wmae`, `bias_pct` |
+| `reports/dead_series.csv` | P4 | P7, P8 | `id` of every series with zero sales in `d_1854`–`d_1913` |
+| `src/features.py` | P5 | P6, P7, P8 | `build_features(store_id, …)` and `build_encodings(train_slice)` — the single definition used by pilot and full run alike |
+| `data/processed/features/store_id=<STORE>/part.parquet` | P5 | P6, P7, P8 | One partition per store. Engineered features `float32`, `sales` `int16`, ids `category`. Excludes target encodings, which are fold-dependent and computed at fit time via `build_encodings` |
 | `models/pilot/<model>_<fold>.<ext>` | P6 | — | Pilot models, CA_1 only |
 | `reports/pilot_scores.csv` | P6 | P7 | `model`, `fold`, `wrmsse`, `rmsse`, `wmae`, `bias_pct`, `runtime_s` |
 | `models/full/<model>_<store>.<ext>` | P7 | P8 | Ten models per configuration, persisted per store so a failure at store 8 doesn't lose 1–7 |
@@ -80,13 +81,20 @@ phases listed. Do not deviate from these paths — later phases load them by nam
 `data/` and `models/` are gitignored — these are build products, not committed artifacts.
 `reports/*.csv` are small and **are** committed, so results survive between sessions.
 
-Fold definitions, used identically by P4, P6, and P7:
+Fold definitions, used identically by P4, P6, and P7. The scale (naive-baseline) and weight
+windows are **fold-local** — `src/metrics.py`'s `training_end`, `weight_start` and `weight_end`
+must be passed per fold, never left at their module defaults, or a fold is scored using days after
+its own training cutoff:
 
-| Fold | Trains on | Predicts |
-|---|---|---|
-| 1 | `d_1` – `d_1829` | `d_1830` – `d_1857` |
-| 2 | `d_1` – `d_1857` | `d_1858` – `d_1885` |
-| 3 | `d_1` – `d_1885` | `d_1886` – `d_1913` |
+| Fold | Trains on | Predicts | `training_end` | Weight window |
+|---|---|---|---|---|
+| 1 | `d_1` – `d_1829` | `d_1830` – `d_1857` | 1829 | `d_1802` – `d_1829` |
+| 2 | `d_1` – `d_1857` | `d_1858` – `d_1885` | 1857 | `d_1830` – `d_1857` |
+| 3 | `d_1` – `d_1885` | `d_1886` – `d_1913` | 1885 | `d_1858` – `d_1885` |
+| Holdout (P7) | `d_1` – `d_1913` | `d_1914` – `d_1941` | 1913 | `d_1886` – `d_1913` |
+
+Models that early-stop use an inner split: for a fold predicting `[a, b]`, stop on `[a-28, a-1]`
+and fit on `d_1` – `d_{a-29}`. Never early-stop on the days being scored.
 
 ## Phases
 
