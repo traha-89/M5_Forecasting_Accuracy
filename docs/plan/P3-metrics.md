@@ -84,14 +84,45 @@ The gate is validation, not implementation. Three independent checks:
    on a random-walk series → RMSSE ≈ 1; weights sum to 1 within each level; 42,840 series produced.
 3. **Degenerate baseline.** An all-zeros forecast should produce a finite, sane WRMSSE. If it produces
    `inf` or `nan`, the denominator handling of the leading-zeros rule is wrong.
+4. **Aggregation check, with a non-zero forecast.** Take a small panel with at least two series
+   sharing one grouping value, forecast a known non-zero constant, and assert the aggregated
+   prediction at a grouped level equals the hand-summed total. Checks 1–3 cannot catch an
+   aggregation error: the toy panel is too small, and an all-zeros forecast is precisely the input
+   under which a multiplicative aggregation bug is invisible (`0 × n == 0`). Two conditions the
+   check must satisfy or it passes vacuously:
+   - **Horizon longer than one day.** A one-day horizon makes any fan-out factor 1.
+   - **Days inside the weight window.** Weights come from the final 28 training days; a toy panel
+     outside that range yields no weight rows, and every non-total level collapses to `0.0`
+     regardless of the forecast. Assert the panel actually reaches the window.
+
+   See `DECISIONS.md` ("P3 — metric validation gaps found during implementation") for the concrete
+   bugs that motivated this item.
 
 ## Gate
 
-- [ ] Hand-computed toy panel matches implementation
-- [ ] Unit tests pass
-- [ ] All 12 levels produced, 42,840 series total
-- [ ] All-zeros forecast gives a finite WRMSSE
-- [ ] `src/metrics.py` importable; notebook imports rather than redefines
+- [x] Hand-computed toy panel matches implementation
+- [x] Unit tests pass
+- [x] All 12 levels produced, 42,840 series total
+- [x] All-zeros forecast gives a finite WRMSSE
+- [x] Non-zero forecast reproduces a hand-summed aggregate at a grouped level (validation 4)
+- [x] `src/metrics.py` importable; notebook imports rather than redefines
+
+A gate item is only met by a check that can fail. Before ticking any box here, confirm the
+corresponding test actually goes red when the behaviour it guards is broken — several tests written
+during P3 passed against a deliberately reintroduced bug.
+
+**Passed 2026-08-18** — see `DECISIONS.md` ("P3 — Metrics", metric validation gaps found during
+implementation). Evidence: all six items derived from computed values in a full run of
+`03_metrics.ipynb` (no hardcoded `[x]`); 18 unit tests pass; all-zeros WRMSSE = 5.4465 with all 12
+levels finite; 42,840 series confirmed present in the weight window, not just countable in the raw
+data. The toy panel and the aggregation guard were each mutation-tested — the toy panel rejects a
+2x-mis-scaled denominator, removal of the leading-zero trimming, and unit-based weights; the
+aggregation test rejects the fan-out join.
+
+Known residual: the unit suite catches 1 of 3 injected `compute_wrmsse` bugs. Both survivors were
+traced — one is masked by a redundant guard, the other by pandas dtype promotion — so neither is a
+live hole, but `compute_wrmsse` coverage is the thinnest part of this phase and is worth
+strengthening if P6/P7 comparisons ever look suspicious.
 
 ## Invariants
 

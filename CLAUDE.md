@@ -21,9 +21,19 @@ Currently: numpy, pandas, matplotlib, seaborn, pyarrow, lightgbm, xgboost, stats
 statsmodels, scikit-learn, jupyterlab, ipykernel, tqdm, pytest.
 
 `src/` is an editable install (`pip install -e .`, per `pyproject.toml`) so notebooks can
-`import src` without a per-notebook `sys.path` shim. `pytest` and a `tests/` package exist
-(P0 scaffolding) but no tests have been written yet — `src/metrics.py` (P3) and `src/features.py`
-(P5) are the modules expected to need them first. There is no lint tooling configured yet.
+`import src` without a per-notebook `sys.path` shim. `tests/test_metrics.py` covers
+`src/metrics.py` (P3); `src/features.py` (P5) is the next module expected to need tests. Run them
+with `./venv/Scripts/python.exe -m pytest tests/ -q`. There is no lint tooling configured yet.
+
+**A passing test suite is not evidence that a check works.** Several P3 tests passed against a
+deliberately reintroduced bug — see `DECISIONS.md` ("P3 — metric validation gaps"). When a test
+guards a specific failure, break that behaviour on purpose and confirm the test goes red before
+treating it as coverage. This matters most where a bug's symptom is a *plausible-looking number*
+rather than a crash.
+
+Notebooks live in `notebooks/`, so their working directory is `notebooks/` — not the repo root.
+Anchor repo-relative paths (`data/`, `tests/`) explicitly rather than assuming the root, and invoke
+subprocesses with `sys.executable` rather than a hardcoded `./venv/Scripts/...` path.
 
 ## Data
 
