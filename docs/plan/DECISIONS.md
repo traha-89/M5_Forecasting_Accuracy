@@ -197,12 +197,12 @@ Made when the plan was drafted, before any code.
 | 1 | Raw trend (+81.3%) is mostly assortment growth (active series +152.9%); units per active series actually fell -36.7% | fig `trend_assortment.png` | Reject a raw-total trend/momentum feature; adopt one normalized against active-catalog size instead | reject (raw) / adopt (normalized) |
 | 2 | Weekend lift is strong in every category and fairly uniform across categories (HOUSEHOLD +33.5, FOODS +27.7, HOBBIES +24.0 pct pts of trend); Friday behaves like a transition day, not an ordinary weekday | fig `seasonality_dow_mstl.png` | Full 7-level `wday` categorical, not a binary weekend flag | adopt |
 | 3 | Annual seasonal swing differs sharply by category: HOUSEHOLD (18.5 pct pts, Aug peak/Dec trough) is ~1.7x FOODS/HOBBIES (10.9/11.1) | fig `seasonality_month_mstl.png` | Per-category month-of-year / annual-harmonic feature, not pooled | adopt |
-| 4 | FOODS SNAP lift is state-specific and varies ~10x: WI +2.5, TX +2.0, CA +0.2 pct pts of trend | fig `snap_lift_by_state.png` | Per-state SNAP flag matched to series `state_id` (not a single pooled `is_snap_day`) | adopt |
+| 4 | The three states run different SNAP calendars, and FOODS lifts on disbursement days in each (WI +2.5, TX +2.0, CA +0.2 pct pts of trend; magnitudes confounded with day-of-month, CA not distinguishable from zero) | figs `snap_schedule.png`, `snap_lift_by_state.png` | Per-state SNAP flag matched to series `state_id` (not a single pooled `is_snap_day`) | adopt |
 | 5 | Closure holidays (Christmas -11.9%, Thanksgiving -8.4%, Easter -8.4%) dip on the day with a lead-up lift beforehand (Thanksgiving +15.1%); open-store federal holidays (Labor Day +12.5%) lift instead | fig `events_headline_phases.png` | Per-`event_name` dummy plus explicit lead-up/hangover offset dummies for the closure-holiday group | adopt |
 | 6 | Pooling by `event_type` still can't replace per-event dummies: mean-absolute effect (fixing the earlier signed-mean's dip/lift cancellation) shows `National` has the largest typical magnitude (5.17%), but the aggregate can't say which direction any given National event moves sales | fig `events_by_type.png` | A single pooled `event_type` feature | reject |
 | 7 | Price changes are rare: median 0.7% of weeks change, 27.5% of series never change price, median gap ~91 weeks between changes | fig `price_change_frequency.png` | A price-change-recency / "still at original price" structural-break flag | adopt |
 | 8 | Sales response to a price change is noise-dominated at the pooled level (Spearman corr with normalized sales: raw price -0.028, relative-to-baseline price +0.024 - both near zero, one sign-flipped) | fig `price_change_sales_response.png` | A pooled cross-sectional price-elasticity coefficient | reject |
-| 9 | 91% of series fall in the sparse ADI/CV² quadrants (intermittent 72.7%, lumpy 18.4%); only 6.1% are smooth | fig `intermittency_adi_cv2_quadrants.png` | Segment label from `series_segments.parquet` used for model routing (esp. isolating the 18.4% lumpy group) | adopt |
+| 9 | 91% of series fall in the sparse ADI/CV² quadrants (intermittent 72.7%, lumpy 18.4%); only 6.1% are smooth | fig `intermittency_adi_cv2_quadrants.png` | Segment label from `series_segments.parquet` used to set loss/objective within the fixed GBM family (Tweedie/Poisson for `intermittent`; the 18.4% `lumpy` group evaluated separately at P6, e.g. two-stage zero/non-zero + magnitude or quantile objectives) | adopt |
 | 10 | Median series is zero-sales on 63.5% of days - mean/std-based statistics are unstable at this zero-inflation level | fig `intermittency_zero_fraction.png` | Any per-series scaling/normalization feature should use robust statistics (median/MAD or non-zero-conditional), not mean/std; favors a zero-inflated/Tweedie-style model objective | adopt |
 | 11 | 64.1% of series joined the panel after `d_1` (only 35.9% present at panel start), matching the assortment-growth finding at the item level | fig `lifecycle_release_dates.png` | `days_since_release` / `history_days` feature | adopt |
 | 12 | Only 0.6% of series (173) show a long dormant tail (>=180d trailing zero sales); no series ever drops out of the panel | fig `lifecycle_trailing_zero_run.png` | `days_since_last_sale` feature; a dedicated "discontinued series" model path | adopt (feature) / reject (dedicated path - group too small) |
@@ -368,5 +368,25 @@ Made when the plan was drafted, before any code.
   requirement; the gate's hypothesis table has no promo row, row #8 is unchanged and still cites
   `price_change_sales_response.png`, and no figure was deleted (the dropped cells produced printed
   output only).
+
+### Intermittency section — model-suitability guidance added, row #9 tightened (2026-08-19)
+
+- **What changed.** The Intermittency Interpretation cell gained explicit model-suitability
+  guidance for each ADI/CV² quadrant, tied to the project's already-fixed model family
+  (LightGBM/XGBoost, per `CLAUDE.md`): a standard RMSE/Tweedie objective is fine for
+  `smooth`/`erratic`; `intermittent` (72.7% of series) likely wants a Tweedie/Poisson objective for
+  its zero-inflated shape; `lumpy` (18.4%) is flagged as the segment most likely to need something
+  beyond a single Tweedie fit (e.g. a two-stage zero/non-zero + magnitude model, or quantile
+  objectives), worth evaluating separately at the P6 gate rather than assumed.
+- **Why this doesn't change the feature decision, only its precision.** Hypothesis-table row #9's
+  proposed feature previously said the quadrant label should drive "model routing (esp. isolating
+  the 18.4% lumpy group)" — vague enough to misread as routing to a different model family, or
+  training separate models per quadrant. The classical intermittent-demand literature
+  (Croston/SBA/TSB) is an alternative to a GBM, not an input to one, and the project's model family
+  is already fixed — so the actual decision this finding drives is loss/objective and structure
+  *within* that family, not which model to use. Row #9 in this file and the notebook's hypothesis
+  table were both updated to say so explicitly.
+- **P2 gate unaffected.** Passed 2026-08-13; this is a precision fix to an already-passed row's
+  proposed-feature text, not a new finding, changed number, or changed verdict (still `adopt`).
 
 <!-- Append phase entries below as gates are passed. -->
