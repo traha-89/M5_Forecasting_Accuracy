@@ -459,6 +459,29 @@ what the gate must prove, and the reasoning matters more than the diffs.
   guard and by pandas dtype promotion respectively, so neither is a live hole), making
   `compute_wrmsse` the thinnest coverage in this phase.
 
+## P3 — spurious gate failure from ANSI color codes            (2026-08-20)
+
+`03_metrics.ipynb`'s `run_unit_tests` cell shells out to `pytest ... -v` via `subprocess.run` and
+derives `unit_test_count` and `fanout_tests_ok` (the "non-zero forecast reproduces a hand-summed
+aggregate" gate item) by checking for the literal substring `" PASSED"` in each captured stdout
+line. In a plain shell this works because pytest auto-disables color when its stdout is a
+non-tty pipe. But `subprocess.run` inherits the parent process's environment by default, and a
+kernel that forces color on (observed with VS Code's Jupyter kernel, likely via an inherited
+`FORCE_COLOR`) causes pytest to emit ANSI codes between the space and the word, e.g.
+`\x1b[32mPASSED\x1b[0m`. The literal `" PASSED"` substring then no longer matches, even though
+the tests actually passed (`Return code: 0` was 0 throughout — this was a display/parsing bug,
+not a real test or code regression). Reproduced directly: `FORCE_COLOR=1 pytest -v` on this repo
+produces exactly that broken substring.
+
+**Fix:** added `--color=no` to the pytest invocation, so the check is deterministic regardless of
+what the calling environment forces. `src/metrics.py` and `tests/test_metrics.py` were untouched
+— confirmed 18/18 tests passing (4/4 in `TestFanOutBugFix`) both before and after this fix, from
+a plain shell and from `notebooks/` matching the kernel's own cwd.
+
+The P3 gate itself is not reopened — the six items were genuinely verified at the 2026-08-18 gate
+run (that run's environment did not force color). This entry documents the gate-checking code
+becoming environment-fragile after the fact, not a change to what was verified then.
+
 ## Plan review — P4–P9 reconciled against P1–P3 findings            (2026-08-19)
 
 Made after P3 passed, before P4 started. The P4–P9 briefs were written pre-EDA; this reviews them
