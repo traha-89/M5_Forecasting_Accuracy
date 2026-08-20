@@ -13,6 +13,8 @@ forecast horizons, using the M5 Forecasting Accuracy competition dataset.
 python -m venv venv
 ./venv/Scripts/python.exe -m pip install -r requirements.txt   # Windows
 source venv/bin/activate && pip install -r requirements.txt    # Unix
+./venv/Scripts/python.exe -m pip install -e .   # Windows — registers src/ as an importable package
+pip install -e .                                # Unix
 ```
 
 `requirements.txt` grows as each phase actually needs a package (e.g. `statsmodels` was added in
